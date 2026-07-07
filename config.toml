@@ -60,3 +60,5 @@ weight = 20
   [markup.goldmark]
     [markup.goldmark.renderer]
       unsafe = true
+relativeURLs = true
+canonifyURLs = false
