@@ -1,59 +1,29 @@
 ---
 title: "Worklog Tuần 7"
-date: 2024-01-01
-weight: 1
+date: 2026-06-05
+weight: 7
 chapter: false
 pre: " <b> 1.7. </b> "
 ---
-{{% notice warning %}}
-⚠️ **Lưu ý:** Các thông tin dưới đây chỉ nhằm mục đích tham khảo, vui lòng **không sao chép nguyên văn** cho bài báo cáo của bạn kể cả warning này.
-{{% /notice %}}
-
 
 ### Mục tiêu tuần 7:
 
-* Kết nối, làm quen với các thành viên trong First Cloud AI Journey.
-* Hiểu dịch vụ AWS cơ bản, cách dùng console & CLI.
+* Tìm hiểu về dịch vụ cơ sở dữ liệu quan hệ được quản lý hoàn toàn (Managed Relational Database Service) thông qua Amazon RDS.
+* Đảm bảo tính bảo mật và độc lập cho dữ liệu bằng cách đặt database bên trong các Private Subnets thuộc VPC.
+* Triển khai DB Subnet Groups và thiết lập cấu hình tường lửa Security Groups cho phép liên kết an toàn từ lớp Web Server (EC2) sang lớp Database (RDS).
 
 ### Các công việc cần triển khai trong tuần này:
-| Thứ | Công việc                                                                                                                                                                                   | Ngày bắt đầu | Ngày hoàn thành | Nguồn tài liệu                            |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | --------------- | ----------------------------------------- |
-| 2   | - Làm quen với các thành viên FCAJ <br> - Đọc và lưu ý các nội quy, quy định tại đơn vị thực tập                                                                                             | 11/08/2025   | 11/08/2025      |
-| 3   | - Tìm hiểu AWS và các loại dịch vụ <br>&emsp; + Compute <br>&emsp; + Storage <br>&emsp; + Networking <br>&emsp; + Database <br>&emsp; + ... <br>                                            | 12/08/2025   | 12/08/2025      | <https://cloudjourney.awsstudygroup.com/> |
-| 4   | - Tạo AWS Free Tier account <br> - Tìm hiểu AWS Console & AWS CLI <br> - **Thực hành:** <br>&emsp; + Tạo AWS account <br>&emsp; + Cài AWS CLI & cấu hình <br> &emsp; + Cách sử dụng AWS CLI | 13/08/2025   | 13/08/2025      | <https://cloudjourney.awsstudygroup.com/> |
-| 5   | - Tìm hiểu EC2 cơ bản: <br>&emsp; + Instance types <br>&emsp; + AMI <br>&emsp; + EBS <br>&emsp; + ... <br> - Các cách remote SSH vào EC2 <br> - Tìm hiểu Elastic IP   <br>                  | 14/08/2025   | 15/08/2025      | <https://cloudjourney.awsstudygroup.com/> |
-| 6   | - **Thực hành:** <br>&emsp; + Tạo EC2 instance <br>&emsp; + Kết nối SSH <br>&emsp; + Gắn EBS volume                                                                                         | 15/08/2025   | 15/08/2025      | <https://cloudjourney.awsstudygroup.com/> |
-
+| Thứ | Công việc | Ngày bắt đầu | Ngày hoàn thành | Nguồn tài liệu |
+| --- | --- | --- | --- | --- |
+| 2 | - Tìm hiểu lý thuyết về Amazon RDS: Các DB engines hỗ trợ, cơ chế tạo bản sao dự phòng (Read Replicas), sao lưu tự động (Backups) và cấu hình nhóm tham số (Parameter Groups) | 01/06/2026 | 01/06/2026 | <https://000005.awsstudygroup.com/> |
+| 3 | - Phân tích kiến trúc bảo vệ dữ liệu: Tạo nhóm mạng con cơ sở dữ liệu (DB Subnet Group), phân chia định tuyến mạng riêng tư và cơ chế dự phòng Multi-AZ | 02/06/2026 | 02/06/2026 | <https://000005.awsstudygroup.com/> |
+| 4 | - **Thực hành:** Tạo một DB Subnet Group liên kết với các Private Subnets thuộc VPC đã thiết kế ở Tuần 4 | 03/06/2026 | 03/06/2026 | <https://000005.awsstudygroup.com/> |
+| 5 | - **Thực hành:** Khởi tạo một DB Instance chạy MySQL hoặc PostgreSQL trên Amazon RDS, thiết lập tài khoản quản trị và chu kỳ bảo trì hệ thống | 04/06/2026 | 04/06/2026 | <https://000005.awsstudygroup.com/> |
+| 6 | - **Thực hành:** Cấu hình Security Group cho RDS chỉ chấp nhận kết nối port 3306 đến từ Security Group của máy chủ Web EC2; cài đặt MySQL client trên EC2 và thực hiện truy vấn kiểm tra kết nối cơ sở dữ liệu | 05/06/2026 | 05/06/2026 | <https://000005.awsstudygroup.com/> |
 
 ### Kết quả đạt được tuần 7:
 
-* Hiểu AWS là gì và nắm được các nhóm dịch vụ cơ bản: 
-  * Compute
-  * Storage
-  * Networking 
-  * Database
-  * ...
-
-* Đã tạo và cấu hình AWS Free Tier account thành công.
-
-* Làm quen với AWS Management Console và biết cách tìm, truy cập, sử dụng dịch vụ từ giao diện web.
-
-* Cài đặt và cấu hình AWS CLI trên máy tính bao gồm:
-  * Access Key
-  * Secret Key
-  * Region mặc định
-  * ...
-
-* Sử dụng AWS CLI để thực hiện các thao tác cơ bản như:
-
-  * Kiểm tra thông tin tài khoản & cấu hình
-  * Lấy danh sách region
-  * Xem dịch vụ EC2
-  * Tạo và quản lý key pair
-  * Kiểm tra thông tin dịch vụ đang chạy
-  * ...
-
-* Có khả năng kết nối giữa giao diện web và CLI để quản lý tài nguyên AWS song song.
-* ...
-
-
+* Triển khai thành công hệ quản trị cơ sở dữ liệu quan hệ được quản trị tự động trên Amazon RDS.
+* Thực hiện cô lập an toàn lớp dữ liệu trong vùng Private Subnet, ngăn chặn mọi đường truyền trực tiếp từ Internet vào máy chủ chứa dữ liệu.
+* Thiết lập chính xác luật tường lửa liên kết (Security Group referencing), chỉ cho phép luồng traffic xuất phát từ các máy chủ ứng dụng được chỉ định gửi truy vấn SQL đến cơ sở dữ liệu.
+* Đăng nhập thành công và thực thi các câu lệnh SQL khởi tạo bảng, truy vấn dữ liệu từ xa từ máy chủ EC2 đến hệ thống RDS MySQL.

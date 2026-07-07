@@ -1,59 +1,29 @@
 ---
 title: "Worklog Tuần 10"
-date: 2024-01-01
-weight: 2
+date: 2026-06-26
+weight: 10
 chapter: false
 pre: " <b> 1.10. </b> "
 ---
-{{% notice warning %}}
-⚠️ **Lưu ý:** Các thông tin dưới đây chỉ nhằm mục đích tham khảo, vui lòng **không sao chép nguyên văn** cho bài báo cáo của bạn kể cả warning này.
-{{% /notice %}}
-
 
 ### Mục tiêu tuần 10:
 
-* Kết nối, làm quen với các thành viên trong First Cloud AI Journey.
-* Hiểu dịch vụ AWS cơ bản, cách dùng console & CLI.
+* Nắm vững kiến thức và kỹ năng thiết kế hệ thống có tính sẵn sàng cao (High Availability), tự động cân bằng tải và co giãn tài nguyên.
+* Triển khai bộ cân bằng tải ứng dụng Application Load Balancer (ALB) và thiết lập các nhóm đích (Target Groups) có cơ chế Health Check tự động.
+* Xây dựng cụm máy chủ tự động co giãn Auto Scaling Group (ASG) kết hợp cấu hình tự động hóa qua Launch Templates.
 
 ### Các công việc cần triển khai trong tuần này:
-| Thứ | Công việc                                                                                                                                                                                   | Ngày bắt đầu | Ngày hoàn thành | Nguồn tài liệu                            |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | --------------- | ----------------------------------------- |
-| 2   | - Làm quen với các thành viên FCAJ <br> - Đọc và lưu ý các nội quy, quy định tại đơn vị thực tập                                                                                             | 11/08/2025   | 11/08/2025      |
-| 3   | - Tìm hiểu AWS và các loại dịch vụ <br>&emsp; + Compute <br>&emsp; + Storage <br>&emsp; + Networking <br>&emsp; + Database <br>&emsp; + ... <br>                                            | 12/08/2025   | 12/08/2025      | <https://cloudjourney.awsstudygroup.com/> |
-| 4   | - Tạo AWS Free Tier account <br> - Tìm hiểu AWS Console & AWS CLI <br> - **Thực hành:** <br>&emsp; + Tạo AWS account <br>&emsp; + Cài AWS CLI & cấu hình <br> &emsp; + Cách sử dụng AWS CLI | 13/08/2025   | 13/08/2025      | <https://cloudjourney.awsstudygroup.com/> |
-| 5   | - Tìm hiểu EC2 cơ bản: <br>&emsp; + Instance types <br>&emsp; + AMI <br>&emsp; + EBS <br>&emsp; + ... <br> - Các cách remote SSH vào EC2 <br> - Tìm hiểu Elastic IP   <br>                  | 14/08/2025   | 15/08/2025      | <https://cloudjourney.awsstudygroup.com/> |
-| 6   | - **Thực hành:** <br>&emsp; + Tạo EC2 instance <br>&emsp; + Kết nối SSH <br>&emsp; + Gắn EBS volume                                                                                         | 15/08/2025   | 15/08/2025      | <https://cloudjourney.awsstudygroup.com/> |
-
+| Thứ | Công việc | Ngày bắt đầu | Ngày hoàn thành | Nguồn tài liệu |
+| --- | --- | --- | --- | --- |
+| 2 | - Nghiên cứu lý thuyết các mô hình mở rộng: Phân biệt mở rộng theo chiều dọc (Vertical scaling) và chiều ngang (Horizontal scaling), cách thức cấu hình mở rộng tự động dựa theo metrics hệ thống | 22/06/2026 | 22/06/2026 | <https://000006.awsstudygroup.com/> |
+| 3 | - Tìm hiểu cơ chế hoạt động phối hợp giữa: Launch Templates (mẫu khởi chạy), Target Groups (nhóm đích), cơ chế Health Check và bộ cân bằng tải ALB | 23/06/2026 | 23/06/2026 | <https://000006.awsstudygroup.com/> |
+| 4 | - **Thực hành:** Khởi tạo Application Load Balancer (ALB), cấu hình Target Group và cài đặt các tham số Health Check (như path kiểm tra `/index.html`, số lần thử lại, thời gian timeout) | 24/06/2026 | 24/06/2026 | <https://000006.awsstudygroup.com/> |
+| 5 | - **Thực hành:** Tạo Launch Template chứa cấu hình loại máy chủ, ổ đĩa, Security Group và đoạn mã script User Data giúp tự động cài đặt Apache Web Server khi boot máy | 25/06/2026 | 25/06/2026 | <https://000006.awsstudygroup.com/> |
+| 6 | - **Thực hành:** Khởi tạo Auto Scaling Group liên kết với ALB và Target Group, thiết lập chính sách co giãn (Scaling Policy) dựa trên mức CPU sử dụng trung bình là 60%, cài đặt công cụ stress test trên EC2 để kiểm thử quá trình tự động tăng/giảm quy mô máy chủ | 26/06/2026 | 26/06/2026 | <https://000006.awsstudygroup.com/> |
 
 ### Kết quả đạt được tuần 10:
 
-* Hiểu AWS là gì và nắm được các nhóm dịch vụ cơ bản: 
-  * Compute
-  * Storage
-  * Networking 
-  * Database
-  * ...
-
-* Đã tạo và cấu hình AWS Free Tier account thành công.
-
-* Làm quen với AWS Management Console và biết cách tìm, truy cập, sử dụng dịch vụ từ giao diện web.
-
-* Cài đặt và cấu hình AWS CLI trên máy tính bao gồm:
-  * Access Key
-  * Secret Key
-  * Region mặc định
-  * ...
-
-* Sử dụng AWS CLI để thực hiện các thao tác cơ bản như:
-
-  * Kiểm tra thông tin tài khoản & cấu hình
-  * Lấy danh sách region
-  * Xem dịch vụ EC2
-  * Tạo và quản lý key pair
-  * Kiểm tra thông tin dịch vụ đang chạy
-  * ...
-
-* Có khả năng kết nối giữa giao diện web và CLI để quản lý tài nguyên AWS song song.
-* ...
-
-
+* Triển khai thành công bộ cân bằng tải ALB, giúp phân phối lưu lượng truy cập đồng đều đến các máy chủ trong Private Subnets, đồng thời tự động loại bỏ các máy chủ gặp lỗi ra khỏi cụm đích.
+* Làm chủ công cụ Launch Template giúp chuẩn hóa cấu hình cài đặt ban đầu cho hàng loạt máy chủ mà không cần thao tác tay.
+* Xây dựng thành công hệ thống Auto Scaling Group tự động co giãn số lượng instance dựa theo tải thực tế của hệ thống.
+* Đã xác thực cơ chế tự phục hồi lỗi (Self-healing): Khi chủ động dừng 1 máy chủ, ASG đã nhận diện trạng thái lỗi và tự động kích hoạt máy chủ mới để đảm bảo dung lượng tối thiểu yêu cầu cho ứng dụng.

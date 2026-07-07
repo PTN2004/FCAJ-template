@@ -6,34 +6,26 @@ chapter: false
 pre: " <b> 1. </b> "
 ---
 
-{{% notice warning %}}
-⚠️ **Note:** The information below is for reference purposes only. Please **do not copy verbatim** for your report, including this warning.
-{{% /notice %}}
+**Week 1:** [AWS Foundations, Billing & Support (04/20/2026 - 04/24/2026)](1.1-week1/)
 
-**On this page**, you will need to introduce your worklog. **How** did you complete it? How many weeks did you take to complete the program? **What** did you do in those weeks?
+**Week 2:** [Identity and Access Management (04/27/2026 - 05/01/2026)](1.2-week2/)
 
-Typically, and as a standard, a worklog is carried out over about 3 months (throughout the internship period) with weekly contents as follows:
+**Week 3:** [Cloud Development & Command Line (05/04/2026 - 05/08/2026)](1.3-week3/)
 
-**Week 1:** [Getting familiar with AWS and basic AWS services](1.1-week1/)
+**Week 4:** [Networking Essentials (05/11/2026 - 05/15/2026)](1.4-week4/)
 
-**Week 2:** [Doing task A...](1.2-week2/)
+**Week 5:** [Compute Essentials (05/18/2026 - 05/22/2026)](1.5-week5/)
 
-**Week 3:** [Doing task B...](1.3-week3/)
+**Week 6:** [Object Storage & Static Hosting (05/25/2026 - 05/29/2026)](1.6-week6/)
 
-**Week 4:** [Doing task C...](1.4-week4/)
+**Week 7:** [Relational Databases (06/01/2026 - 06/05/2026)](1.7-week7/)
 
-**Week 5:** [Doing task D...](1.5-week5/)
+**Week 8:** [Domain Name System & Hybrid DNS (06/08/2026 - 06/12/2026)](1.8-week8/)
 
-**Week 6:** [Doing task E...](1.6-week6/)
+**Week 9:** [Cost-Optimized Compute & Prototyping (06/15/2026 - 06/19/2026)](1.9-week9/)
 
-**Week 7:** [Doing task G...](1.7-week7/)
+**Week 10:** [Scalability & High Availability (06/22/2026 - 06/26/2026)](1.10-week10/)
 
-**Week 8:** [Doing task H...](1.8-week8/)
+**Week 11:** [Observability & Monitoring (06/29/2026 - 07/03/2026)](1.11-week11/)
 
-**Week 9:** [Doing task I...](1.9-week9/)
-
-**Week 10:** [Doing task L...](1.10-week10/)
-
-**Week 11:** [Doing task M...](1.11-week11/)
-
-**Week 12:** [Doing task N...](1.12-week12/)
+**Week 12:** [Capstone Project: Building Highly Available Web Applications (07/06/2026 - 07/10/2026)](1.12-week12/)

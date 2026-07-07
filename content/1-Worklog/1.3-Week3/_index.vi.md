@@ -1,59 +1,30 @@
 ---
 title: "Worklog Tuần 3"
-date: 2024-01-01
-weight: 1
+date: 2026-05-08
+weight: 3
 chapter: false
 pre: " <b> 1.3. </b> "
 ---
-{{% notice warning %}}
-⚠️ **Lưu ý:** Các thông tin dưới đây chỉ nhằm mục đích tham khảo, vui lòng **không sao chép nguyên văn** cho bài báo cáo của bạn kể cả warning này.
-{{% /notice %}}
-
 
 ### Mục tiêu tuần 3:
 
-* Kết nối, làm quen với các thành viên trong First Cloud AI Journey.
-* Hiểu dịch vụ AWS cơ bản, cách dùng console & CLI.
+* Thiết lập và làm quen với môi trường phát triển mã nguồn cloud (Cloud IDE) thông qua dịch vụ AWS Cloud9.
+* Cài đặt, cấu hình và sử dụng thành thạo giao diện dòng lệnh AWS CLI để tương tác trực tiếp với các tài nguyên trên đám mây.
+* Xây dựng kỹ năng tự động hóa bằng cách viết script CLI kết hợp truy vấn lọc dữ liệu nâng cao.
 
 ### Các công việc cần triển khai trong tuần này:
-| Thứ | Công việc                                                                                                                                                                                   | Ngày bắt đầu | Ngày hoàn thành | Nguồn tài liệu                            |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | --------------- | ----------------------------------------- |
-| 2   | - Làm quen với các thành viên FCAJ <br> - Đọc và lưu ý các nội quy, quy định tại đơn vị thực tập                                                                                             | 11/08/2025   | 11/08/2025      |
-| 3   | - Tìm hiểu AWS và các loại dịch vụ <br>&emsp; + Compute <br>&emsp; + Storage <br>&emsp; + Networking <br>&emsp; + Database <br>&emsp; + ... <br>                                            | 12/08/2025   | 12/08/2025      | <https://cloudjourney.awsstudygroup.com/> |
-| 4   | - Tạo AWS Free Tier account <br> - Tìm hiểu AWS Console & AWS CLI <br> - **Thực hành:** <br>&emsp; + Tạo AWS account <br>&emsp; + Cài AWS CLI & cấu hình <br> &emsp; + Cách sử dụng AWS CLI | 13/08/2025   | 13/08/2025      | <https://cloudjourney.awsstudygroup.com/> |
-| 5   | - Tìm hiểu EC2 cơ bản: <br>&emsp; + Instance types <br>&emsp; + AMI <br>&emsp; + EBS <br>&emsp; + ... <br> - Các cách remote SSH vào EC2 <br> - Tìm hiểu Elastic IP   <br>                  | 14/08/2025   | 15/08/2025      | <https://cloudjourney.awsstudygroup.com/> |
-| 6   | - **Thực hành:** <br>&emsp; + Tạo EC2 instance <br>&emsp; + Kết nối SSH <br>&emsp; + Gắn EBS volume                                                                                         | 15/08/2025   | 15/08/2025      | <https://cloudjourney.awsstudygroup.com/> |
-
+| Thứ | Công việc | Ngày bắt đầu | Ngày hoàn thành | Nguồn tài liệu |
+| --- | --- | --- | --- | --- |
+| 2 | - Tìm hiểu lý thuyết về AWS Cloud9, ưu thế của lập trình trực tuyến và cơ chế tự động tạm dừng (Auto-hibernate) để tiết kiệm chi phí | 04/05/2026 | 04/05/2026 | <https://000049.awsstudygroup.com/> |
+| 3 | - **Thực hành:** Khởi chạy một môi trường Cloud9 dựa trên EC2 instance, cấu hình tự động ngủ đông sau 30 phút rảnh rỗi và viết mã thử nghiệm | 05/05/2026 | 05/05/2026 | <https://000049.awsstudygroup.com/> |
+| 4 | - Tìm hiểu cách thức cài đặt AWS CLI, cấu hình các profile bảo mật và định dạng hiển thị kết quả (JSON, Table, Text) | 06/05/2026 | 06/05/2026 | <https://000011.awsstudygroup.com/> |
+| 5 | - **Thực hành:** Cài đặt AWS CLI v2 trên máy ảo Cloud9, cấu hình định danh qua lệnh `aws configure` và thực hiện các câu lệnh kiểm thử cơ bản | 07/05/2026 | 07/05/2026 | <https://000011.awsstudygroup.com/> |
+| 6 | - **Thực hành:** Sử dụng AWS CLI thực hiện thao tác quản lý S3 (tạo bucket, upload file, đồng bộ thư mục) và viết kịch bản bash shell kết hợp lọc dữ liệu bằng flag `--query` | 08/05/2026 | 08/05/2026 | <https://000011.awsstudygroup.com/> |
 
 ### Kết quả đạt được tuần 3:
 
-* Hiểu AWS là gì và nắm được các nhóm dịch vụ cơ bản: 
-  * Compute
-  * Storage
-  * Networking 
-  * Database
-  * ...
-
-* Đã tạo và cấu hình AWS Free Tier account thành công.
-
-* Làm quen với AWS Management Console và biết cách tìm, truy cập, sử dụng dịch vụ từ giao diện web.
-
-* Cài đặt và cấu hình AWS CLI trên máy tính bao gồm:
-  * Access Key
-  * Secret Key
-  * Region mặc định
-  * ...
-
-* Sử dụng AWS CLI để thực hiện các thao tác cơ bản như:
-
-  * Kiểm tra thông tin tài khoản & cấu hình
-  * Lấy danh sách region
-  * Xem dịch vụ EC2
-  * Tạo và quản lý key pair
-  * Kiểm tra thông tin dịch vụ đang chạy
-  * ...
-
-* Có khả năng kết nối giữa giao diện web và CLI để quản lý tài nguyên AWS song song.
-* ...
-
-
+* Triển khai thành công môi trường lập trình trực tuyến Cloud9 tích hợp sẵn các công cụ phát triển cần thiết.
+* Thiết lập chính xác cơ chế tự động ngủ đông (Auto-sleep) giúp tối ưu hóa chi phí điện toán, tránh lãng phí khi không sử dụng.
+* Cài đặt thành công AWS CLI v2, làm chủ việc quản lý các access profile để phân tách quyền hạn giữa các môi trường (Dev, Staging).
+* Sử dụng thành thạo các câu lệnh CLI quản trị tài nguyên lưu trữ và tính toán.
+* Viết thành công một file script tự động hóa bằng Bash shell, trích xuất danh sách các server đang chạy và tự động xuất báo cáo định dạng JSON gửi lên S3 bucket.

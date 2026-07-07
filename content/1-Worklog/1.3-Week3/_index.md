@@ -1,57 +1,30 @@
 ---
 title: "Week 3 Worklog"
-date: 2024-01-01
-weight: 1
+date: 2026-05-08
+weight: 3
 chapter: false
 pre: " <b> 1.3. </b> "
 ---
-{{% notice warning %}} 
-⚠️ **Note:** The following information is for reference purposes only. Please **do not copy verbatim** for your own report, including this warning.
-{{% /notice %}}
-
 
 ### Week 3 Objectives:
 
-* Connect and get acquainted with members of First Cloud AI Journey.
-* Understand basic AWS services, how to use the console & CLI.
+* Set up a containerized browser-based software development workspace using AWS Cloud9.
+* Install, configure, and use the AWS Command Line Interface (CLI) to programmatically interface with AWS endpoints.
+* Practice writing command-line queries and shell scripts to automate simple cloud operations.
 
 ### Tasks to be carried out this week:
-| Day | Task                                                                                                                                                                                                   | Start Date | Completion Date | Reference Material                        |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------- | --------------- | ----------------------------------------- |
-| 2   | - Get acquainted with FCAJ members <br> - Read and take note of internship unit rules and regulations                                                                                                   | 08/11/2025 | 08/11/2025      |
-| 3   | - Learn about AWS and its types of services <br>&emsp; + Compute <br>&emsp; + Storage <br>&emsp; + Networking <br>&emsp; + Database <br>&emsp; + ... <br>                                              | 08/12/2025 | 08/12/2025      | <https://cloudjourney.awsstudygroup.com/> |
-| 4   | - Create AWS Free Tier account <br> - Learn about AWS Console & AWS CLI <br> - **Practice:** <br>&emsp; + Create AWS account <br>&emsp; + Install & configure AWS CLI <br> &emsp; + How to use AWS CLI | 08/13/2025 | 08/13/2025      | <https://cloudjourney.awsstudygroup.com/> |
-| 5   | - Learn basic EC2: <br>&emsp; + Instance types <br>&emsp; + AMI <br>&emsp; + EBS <br>&emsp; + ... <br> - SSH connection methods to EC2 <br> - Learn about Elastic IP   <br>                            | 08/14/2025 | 08/15/2025      | <https://cloudjourney.awsstudygroup.com/> |
-| 6   | - **Practice:** <br>&emsp; + Launch an EC2 instance <br>&emsp; + Connect via SSH <br>&emsp; + Attach an EBS volume                                                                                     | 08/15/2025 | 08/15/2025      | <https://cloudjourney.awsstudygroup.com/> |
-
+| Day | Task | Start Date | Completion Date | Reference Material |
+| --- | --- | --- | --- | --- |
+| 2 | - Research Cloud9 capabilities: Virtual environment environments, IDE collaboration features, and timeout configurations | 05/04/2026 | 05/04/2026 | <https://000049.awsstudygroup.com/> |
+| 3 | - **Practice:** Launch an AWS Cloud9 IDE workspace, configure automatic environment sleep to 30 minutes, and test code editing | 05/05/2026 | 05/05/2026 | <https://000049.awsstudygroup.com/> |
+| 4 | - Study AWS CLI installation architecture: Configuration profiles, command syntax formats, and query filtering methods | 05/06/2026 | 05/06/2026 | <https://000011.awsstudygroup.com/> |
+| 5 | - **Practice:** Install AWS CLI on the Cloud9 environment, configure the default region and profile, and run validation queries | 05/07/2026 | 05/07/2026 | <https://000011.awsstudygroup.com/> |
+| 6 | - **Practice:** Use AWS CLI to list S3 buckets, create a bucket, upload a file, and write a Bash query script using `--query` | 05/08/2026 | 05/08/2026 | <https://000011.awsstudygroup.com/> |
 
 ### Week 3 Achievements:
 
-* Understood what AWS is and mastered the basic service groups: 
-  * Compute
-  * Storage
-  * Networking 
-  * Database
-  * ...
-
-* Successfully created and configured an AWS Free Tier account.
-
-* Became familiar with the AWS Management Console and learned how to find, access, and use services via the web interface.
-
-* Installed and configured AWS CLI on the computer, including:
-  * Access Key
-  * Secret Key
-  * Default Region
-  * ...
-
-* Used AWS CLI to perform basic operations such as:
-
-  * Check account & configuration information
-  * Retrieve the list of regions
-  * View EC2 service
-  * Create and manage key pairs
-  * Check information about running services
-  * ...
-
-* Acquired the ability to connect between the web interface and CLI to manage AWS resources in parallel.
-* ...
+* Successfully established a cloud-based development environment using AWS Cloud9, minimizing local hardware dependencies.
+* Configured auto-suspension features in Cloud9 to automatically spin down compute resources when idle, optimizing account costs.
+* Mastered installation and configuration of AWS CLI v2, implementing security profile segments for distinct developer scopes.
+* Acquired advanced terminal skills, utilizing JMESPath queries within the `--query` flag of the CLI to filter JSON outputs down to essential fields.
+* Wrote a shell script that lists active servers and uploads log files directly to S3 bucket endpoints.

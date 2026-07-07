@@ -5,40 +5,29 @@ weight: 7
 chapter: false
 pre: " <b> 7. </b> "
 ---
-{{% notice warning %}}
-⚠️ **Lưu ý:** Các thông tin dưới đây chỉ nhằm mục đích tham khảo, vui lòng **không sao chép nguyên văn** cho bài báo cáo của bạn kể cả warning này.
-{{% /notice %}}
-
->Tại đây bạn có thể tự do đóng góp ý kiến cá nhân về những trải nghiệm khi tham gia chương trình First Cloud AI Journey, giúp team FCAJ cải thiện những vấn đề còn thiếu sót dựa trên các hạng mục sau:
 
 ### Đánh giá chung
 
 **1. Môi trường làm việc**  
-Môi trường làm việc rất thân thiện và cởi mở. Các thành viên trong FCAJ luôn sẵn sàng hỗ trợ khi mình gặp khó khăn, kể cả ngoài giờ làm việc. Không gian làm việc gọn gàng, thoải mái, giúp mình tập trung tốt hơn. Tuy nhiên, mình nghĩ có thể bổ sung thêm một số buổi giao lưu hoặc team bonding để mọi người hiểu nhau hơn.
+Môi trường ở FCAJ rất chuyên nghiệp, hiện đại và thân thiện. Không gian làm việc thoải mái giúp em tập trung làm việc tốt hơn. Mọi người ở đây cũng rất cởi mở và sẵn sàng hỗ trợ khi em gặp khó khăn.
 
-**2. Sự hỗ trợ của mentor / team admin**  
-Mentor hướng dẫn rất chi tiết, giải thích rõ ràng khi mình chưa hiểu và luôn khuyến khích mình đặt câu hỏi. Team admin hỗ trợ các thủ tục, tài liệu và tạo điều kiện để mình làm việc thuận lợi. Mình đánh giá cao việc mentor cho phép mình thử và tự xử lý vấn đề thay vì chỉ đưa đáp án.
+**2. Sự hỗ trợ từ Mentor và Đội ngũ Ban quản trị (Admin Team)**  
+Các anh chị mentor hướng dẫn rất nhiệt tình, giải đáp kỹ các thắc mắc của em trong dự án livecap và chỉ cho em hướng tự giải quyết vấn đề. Đội ngũ admin hỗ trợ nhanh chóng các thủ tục hành chính và cung cấp tài liệu hướng dẫn đầy đủ.
 
-**3. Sự phù hợp giữa công việc và chuyên ngành học**  
-Công việc mình được giao phù hợp với kiến thức mình đã học ở trường, đồng thời mở rộng thêm những mảng mới mà mình chưa từng được tiếp cận. Nhờ vậy, mình vừa củng cố kiến thức nền tảng, vừa học thêm kỹ năng thực tế.
+**3. Sự tương thích giữa công việc thực tế và chuyên ngành**  
+Dự án livecap (làm app meeting caption Việt-Anh) rất thực tế và đúng với ngành Điện toán đám mây em đang học. Em được thực hành trực tiếp các dịch vụ như VPC, EC2, S3, RDS và CloudWatch mà trước đây chỉ học lý thuyết ở trường.
 
-**4. Cơ hội học hỏi & phát triển kỹ năng**  
-Trong quá trình thực tập, mình học được nhiều kỹ năng mới như sử dụng công cụ quản lý dự án, kỹ năng làm việc nhóm, và cả cách giao tiếp chuyên nghiệp trong môi trường công ty. Mentor cũng chia sẻ nhiều kinh nghiệm thực tế giúp mình định hướng tốt hơn cho sự nghiệp.
+**4. Cơ hội học hỏi & Phát triển bản thân**  
+Em học được thêm nhiều kiến thức thực tế về AWS (thao tác qua Console và CLI), hiểu sâu hơn về thiết kế hệ thống và cải thiện kỹ năng làm việc nhóm cũng như cách viết báo cáo, giao tiếp trong công việc.
 
-**5. Văn hóa & tinh thần đồng đội**  
-Văn hóa công ty rất tích cực: mọi người tôn trọng lẫn nhau, làm việc nghiêm túc nhưng vẫn vui vẻ. Khi có dự án gấp, mọi người cùng nhau cố gắng, hỗ trợ không phân biệt vị trí. Điều này giúp mình cảm thấy mình là một phần của tập thể, dù chỉ là thực tập sinh.
+**5. Văn hóa doanh nghiệp & Tinh thần đồng đội**  
+Mọi người trong dự án rất hòa đồng và tôn trọng lẫn nhau. Không khí làm việc vui vẻ, không có khoảng cách lớn giữa thực tập sinh và nhân viên chính thức. Mọi người luôn hỗ trợ nhau khi gặp khó khăn.
 
-**6. Chính sách / phúc lợi cho thực tập sinh**  
-Công ty có hỗ trợ phụ cấp thực tập và tạo điều kiện về thời gian linh hoạt khi cần thiết. Ngoài ra, việc được tham gia các buổi đào tạo nội bộ là một điểm cộng lớn.
-
-
-### Một số câu hỏi khác
-- Điều bạn **hài lòng nhất** trong thời gian thực tập?  
-- Điều bạn nghĩ công ty **cần cải thiện** cho các thực tập sinh sau?  
-- Nếu giới thiệu cho bạn bè, bạn có **khuyên họ thực tập ở đây không**? Vì sao?  
+**6. Chính sách và phúc lợi dành cho thực tập sinh**  
+Chính sách hỗ trợ thực tập sinh tốt, thời gian làm việc linh hoạt giúp em dễ dàng sắp xếp việc học ở trường. Các buổi chia sẻ công nghệ nội bộ cũng rất bổ ích cho định hướng sau này.
 
 
 ### Đề xuất & mong muốn
-- Bạn có đề xuất gì để cải thiện trải nghiệm trong kỳ thực tập?  
-- Bạn có muốn tiếp tục chương trình này trong tương lai?
-- Góp ý khác (tự do chia sẻ):
+
+* **Đề xuất:** Có thêm nhiều buổi chia sẽ kiến thức và case study thực tế
+* **Mong muốn:** Mong muốn có cơ hội tiếp tục làm việc hoặc tham gia các dự án tiếp theo của FCAJ.

@@ -1,58 +1,28 @@
 ---
 title: "Worklog Tuần 12"
-date: 2024-01-01
-weight: 2
+date: 2026-07-10
+weight: 12
 chapter: false
 pre: " <b> 1.12 </b> "
 ---
-{{% notice warning %}}
-⚠️ **Lưu ý:** Các thông tin dưới đây chỉ nhằm mục đích tham khảo, vui lòng **không sao chép nguyên văn** cho bài báo cáo của bạn kể cả warning này.
-{{% /notice %}}
 
 ### Mục tiêu tuần 12:
 
-* Kết nối, làm quen với các thành viên trong First Cloud AI Journey.
-* Hiểu dịch vụ AWS cơ bản, cách dùng console & CLI.
+* Tổng hợp toàn bộ các phân hệ dịch vụ đã học trong chuỗi Explore AWS Services thành một dự án kiến trúc web 3 lớp có tính sẵn sàng cao (High Availability).
+* Thiết kế, triển khai thực tế, ghi nhận kết quả hoạt động của toàn bộ hạ tầng và hoàn tất báo cáo thực tập worklog 12 tuần.
 
 ### Các công việc cần triển khai trong tuần này:
-| Thứ | Công việc                                                                                                                                                                                   | Ngày bắt đầu | Ngày hoàn thành | Nguồn tài liệu                            |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ | --------------- | ----------------------------------------- |
-| 2   | - Làm quen với các thành viên FCAJ <br> - Đọc và lưu ý các nội quy, quy định tại đơn vị thực tập                                                                                             | 11/08/2025   | 11/08/2025      |
-| 3   | - Tìm hiểu AWS và các loại dịch vụ <br>&emsp; + Compute <br>&emsp; + Storage <br>&emsp; + Networking <br>&emsp; + Database <br>&emsp; + ... <br>                                            | 12/08/2025   | 12/08/2025      | <https://cloudjourney.awsstudygroup.com/> |
-| 4   | - Tạo AWS Free Tier account <br> - Tìm hiểu AWS Console & AWS CLI <br> - **Thực hành:** <br>&emsp; + Tạo AWS account <br>&emsp; + Cài AWS CLI & cấu hình <br> &emsp; + Cách sử dụng AWS CLI | 13/08/2025   | 13/08/2025      | <https://cloudjourney.awsstudygroup.com/> |
-| 5   | - Tìm hiểu EC2 cơ bản: <br>&emsp; + Instance types <br>&emsp; + AMI <br>&emsp; + EBS <br>&emsp; + ... <br> - Các cách remote SSH vào EC2 <br> - Tìm hiểu Elastic IP   <br>                  | 14/08/2025   | 15/08/2025      | <https://cloudjourney.awsstudygroup.com/> |
-| 6   | - **Thực hành:** <br>&emsp; + Tạo EC2 instance <br>&emsp; + Kết nối SSH <br>&emsp; + Gắn EBS volume                                                                                         | 15/08/2025   | 15/08/2025      | <https://cloudjourney.awsstudygroup.com/> |
-
+| Thứ | Công việc | Ngày bắt đầu | Ngày hoàn thành | Nguồn tài liệu |
+| --- | --- | --- | --- | --- |
+| 2 | - Thiết kế sơ đồ kiến trúc ứng dụng web 3 lớp có tính sẵn sàng cao và khả năng tự động khôi phục lỗi | 07/06/2026 | 07/06/2026 | <https://cloudjourney.awsstudygroup.com/> |
+| 3 | - **Thực hành:** Tạo VPC, Subnets, Gateway định tuyến an toàn và cấu hình khởi tạo RDS MySQL Multi-AZ ở lớp cơ sở dữ liệu | 07/07/2026 | 07/07/2026 | <https://cloudjourney.awsstudygroup.com/> |
+| 4 | - **Thực hành:** Triển khai lớp ứng dụng web với Auto Scaling Group gán IAM Role bảo mật và đấu nối qua ALB | 07/08/2026 | 07/08/2026 | <https://cloudjourney.awsstudygroup.com/> |
+| 5 | - **Thực hành:** Cấu hình Route53 điều hướng tên miền về ALB và thiết lập hệ thống CloudWatch giám sát toàn bộ tài nguyên | 07/09/2026 | 07/09/2026 | <https://cloudjourney.awsstudygroup.com/> |
+| 6 | - Thực hiện kiểm thử tích hợp (Integration Test), viết báo cáo tổng kết thực tập và nghiệm thu worklog 12 tuần | 07/10/2026 | 07/10/2026 | <https://cloudjourney.awsstudygroup.com/> |
 
 ### Kết quả đạt được tuần 12:
 
-* Hiểu AWS là gì và nắm được các nhóm dịch vụ cơ bản: 
-  * Compute
-  * Storage
-  * Networking 
-  * Database
-  * ...
-
-* Đã tạo và cấu hình AWS Free Tier account thành công.
-
-* Làm quen với AWS Management Console và biết cách tìm, truy cập, sử dụng dịch vụ từ giao diện web.
-
-* Cài đặt và cấu hình AWS CLI trên máy tính bao gồm:
-  * Access Key
-  * Secret Key
-  * Region mặc định
-  * ...
-
-* Sử dụng AWS CLI để thực hiện các thao tác cơ bản như:
-
-  * Kiểm tra thông tin tài khoản & cấu hình
-  * Lấy danh sách region
-  * Xem dịch vụ EC2
-  * Tạo và quản lý key pair
-  * Kiểm tra thông tin dịch vụ đang chạy
-  * ...
-
-* Có khả năng kết nối giữa giao diện web và CLI để quản lý tài nguyên AWS song song.
-* ...
-
-
+* Xây dựng và triển khai thành công mô hình kiến trúc ứng dụng web 3 lớp hoàn chỉnh, đảm bảo tính dự phòng, khả năng co giãn và cô lập bảo mật chặt chẽ.
+* Cấu hình thành công tính năng Multi-AZ cho cơ sở dữ liệu RDS MySQL giúp hệ thống tự động failover sang zone dự phòng khi xảy ra sự cố.
+* Liên kết thành công tên miền DNS qua Route53 để phân phối tải qua ALB đến cụm máy chủ tự co giãn ASG.
+* Hoàn thiện và tổng hợp đầy đủ nội dung báo cáo thực tập worklog 12 tuần theo đúng lộ trình đã đề ra.

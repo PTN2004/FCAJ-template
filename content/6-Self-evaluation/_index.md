@@ -1,21 +1,18 @@
 ---
-title: "Self-Assessment"
+title: "Self-Evaluation"
 date: 2024-01-01
 weight: 6
 chapter: false
 pre: " <b> 6. </b> "
 ---
 
-{{% notice warning %}}
-⚠️ **Note:** The information below is for reference purposes only. Please **do not copy it verbatim** into your report, including this warning.
-{{% /notice %}}
 
-During my internship at **[Company/Organization Name]** from **[start date]** to **[end date]**, I had the opportunity to learn, practice, and apply the knowledge acquired in school to a real-world working environment.  
-I participated in **[briefly describe the main project or task]**, through which I improved my skills in **[list skills: programming, analysis, reporting, communication, etc.]**.  
+Having completed my internship at **Amazon Web Services Vietnam Co., Ltd.** from **17/04/2026** to **12/07/2026**, I had the chance to experience a professional working environment and put my academic knowledge into practice.  
+My primary responsibility was participating in the **livecap project - a real-time Vietnamese-English meeting caption application**. This project helped me strengthen key capabilities, including **teamwork, system research and design, working with Cloud services, optimizing cloud infrastructure costs, and professional workplace communication and reporting**.  
 
-In terms of work ethic, I always strived to complete tasks well, complied with workplace regulations, and actively engaged with colleagues to improve work efficiency.
+In terms of conduct, I always made an effort to perform my duties well, observe company policies, and collaborate actively with team members to deliver quality results.
 
-To objectively reflect on my internship period, I would like to evaluate myself based on the following criteria:
+To evaluate my performance during this period, I have self-assessed my work against the following criteria:
 
 | No. | Criteria                            | Description                                                                                      | Good | Fair | Average |
 | --- | ----------------------------------- | ------------------------------------------------------------------------------------------------ | ---- | ---- | ------- |
@@ -32,8 +29,8 @@ To objectively reflect on my internship period, I would like to evaluate myself 
 | 11  | **Contribution to project/team**    | Work effectiveness, innovative ideas, recognition from the team                                  | ✅    | ☐    | ☐       |
 | 12  | **Overall**                         | General evaluation of the entire internship period                                               | ✅    | ☐    | ☐       |
 
-### Needs Improvement
+### Areas for Improvement
 
-* Strengthen discipline and strictly comply with the rules and regulations of the company or any organization  
-* Improve problem-solving thinking  
-* Enhance communication skills in both daily interactions and professional contexts, including handling situations effectively
+* **Discipline:** I need to focus more on strictly adhering to workplace regulations, schedules, and operational guidelines of the company or any other organization.
+* **Problem-solving skills:** I strive to further develop my analytical thinking to resolve system issues more efficiently.
+* **Communication:** I should continue improving my daily and professional communication skills, especially in handling workplace situations and presenting ideas.
