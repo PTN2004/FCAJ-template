@@ -1,43 +1,50 @@
 ---
-title : "Create an S3 Interface endpoint"
-date : 2024-01-01
-weight : 2
-chapter : false
-pre : " <b> 5.4.2 </b> "
+title: "Stream Audio and Produce Live Captions"
+date: 2026-07-05
+weight: 2
+chapter: false
+pre: " <b> 5.4.2. </b> "
 ---
 
-In this section you will create and test an S3 interface endpoint using the simulated on-premises environment deployed as part of this workshop.
+# Stream Audio and Produce Live Captions
 
-1. Return to the Amazon VPC menu. In the navigation pane, choose Endpoints, then click Create Endpoint.
+## Audio and WebSocket Pipeline
 
-2. In Create endpoint console:
-+ Name the interface endpoint
-+ In Service category, choose **aws services** 
+```text
+Microphone
+  -> Web Audio worklet
+  -> 16 kHz, 16-bit, mono PCM chunks
+  -> CloudFront WSS /ws/transcribe
+  -> ALB
+  -> FastAPI on Fargate
+  -> Amazon Transcribe Streaming
+```
 
-![name](/images/5-Workshop/5.4-S3-onprem/s3-interface-endpoint1.png)
+The microphone starts only after the backend is ready and the WebSocket is
+open. Chunks produced while the socket is unavailable are dropped, preventing
+unbounded client buffering.
 
-3.  In the Search box, type S3 and press Enter. Select the endpoint named com.amazonaws.us-east-1.s3. Ensure that the Type column indicates Interface.
+## Bilingual Processing
 
-![service](/images/5-Workshop/5.4-S3-onprem/s3-interface-endpoint2.png)
+With `BILINGUAL_DUAL_STREAM=true`, the backend fans the same PCM input into
+Vietnamese and English Transcribe streams, arbitrates results, and translates
+the selected finalized segment into the other language. Partial results may be
+shown as transient state, but only finalized segments become permanent rows.
 
-4. For VPC, select VPC Cloud from the drop-down.
-{{% notice warning %}}
-Make sure to choose "VPC Cloud" and not "VPC On-prem"
-{{% /notice %}}
-+ Expand **Additional settings** and ensure that Enable DNS name is *not* selected (we will use this in the next part of the workshop)
+## Connection Resilience
 
-![vpc](/images/5-Workshop/5.4-S3-onprem/s3-interface-endpoint3.png)
+- The frontend sends `ping` every 30 seconds; the backend returns `pong`.
+- An unexpected recording-time disconnect retries at most three times with
+  1, 2, and 4 second backoff.
+- A reconnect creates a new backend session while preserving finalized rows.
+- If retries fail, audio capture stops and the user must restart the session.
+- Stop, disconnect, timeout, Transcribe error, and internal exceptions all run
+  queue, worker, stream, and registry cleanup.
 
-5. Select 2 subnets in the following AZs: us-east-1a and us-east-1b
+## Session Guardrails
 
-![subnets](/images/5-Workshop/5.4-S3-onprem/s3-interface-endpoint4.png)
+The UI and backend share a 30-minute maximum duration. The backend also rejects
+excess global/per-IP sessions before starting managed AI service work. These
+limits bound accidental Transcribe and Translate usage for the MVP.
 
-6. For Security group, choose SGforS3Endpoint:
-
-![sg](/images/5-Workshop/5.4-S3-onprem/s3-interface-endpoint5.png)
-
-7. Keep the default policy - full access and click Create endpoint
-
-![success](/images/5-Workshop/5.4-S3-onprem/s3-interface-endpoint-success.png)
-
-Congratulation on successfully creating S3 interface endpoint. In the next step, we will test the interface endpoint.
+![Step result: finalized captions returned to the live dashboard](/images/3-Project/livecap-dashboard.png)

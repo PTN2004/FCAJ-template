@@ -1,57 +1,77 @@
 ---
-title : "Prepare the environment"
-date : 2024-01-01
-weight : 1
-chapter : false
-pre : " <b> 5.4.1 </b> "
+title: "Build and Deliver the React Frontend"
+date: 2026-07-05
+weight: 1
+chapter: false
+pre: " <b> 5.4.1. </b> "
 ---
 
-To prepare for this part of the workshop you will need to:
-+ Deploying a CloudFormation stack 
-+ Modifying a VPC route table. 
+# Build and Deliver the React Frontend
 
-These components work together to simulate on-premises DNS forwarding and name resolution.
+## Step 1: Test and Build
 
-#### Deploy the CloudFormation stack
+```powershell
+cd frontend
+npm ci
+npm test
+npm run build
+```
 
-The CloudFormation template will create additional services to support an on-premises simulation:
-+ One Route 53 Private Hosted Zone that hosts Alias records for the PrivateLink S3 endpoint
-+ One Route 53 Inbound Resolver endpoint that enables "VPC Cloud" to resolve inbound DNS resolution requests to the Private Hosted Zone
-+ One Route 53 Outbound Resolver endpoint that enables "VPC On-prem" to forward DNS requests for S3 to "VPC Cloud"
+The build runs TypeScript checking and creates the Vite `dist` output. The
+verified baseline has 11 passing frontend tests and zero known production npm
+vulnerabilities at release time.
 
-![route 53 diagram](/images/5-Workshop/5.4-S3-onprem/route53.png)
+Verify the generated site before upload:
 
-1. Click the following link to open the [AWS CloudFormation console](https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/quickcreate?templateURL=https://s3.amazonaws.com/reinvent-endpoints-builders-session/R53CF.yaml&stackName=PLOnpremSetup). The required template will be pre-loaded into the menu. Accept all default and click Create stack.
+```powershell
+npm run preview -- --host 127.0.0.1
+# Open http://127.0.0.1:4173 and check / plus /app.
+```
 
-![Create stack](/images/5-Workshop/5.4-S3-onprem/create-stack.png)
+## Step 2: Store Static Assets Privately
 
-![Button](/images/5-Workshop/5.4-S3-onprem/create-stack-button.png)
+The frontend S3 bucket blocks public access and uses encryption and versioning.
+Browser access goes through CloudFront Origin Access Control rather than an S3
+website endpoint or public bucket policy.
 
-It may take a few minutes for stack deployment to complete. You can continue with the next step without waiting for the deployemnt to finish.
+After confirming the AWS account and bucket name, synchronize the built output:
 
-#### Update on-premise private route table
+```powershell
+aws s3 sync dist "s3://<frontend-bucket>" --delete `
+  --region ap-southeast-1
+```
 
-This workshop uses a strongSwan VPN running on an EC2 instance to simulate connectivty between an on-premises datacenter and the AWS cloud. Most of the required components are provisioned before your start. To finalize the VPN configuration, you will modify the "VPC On-prem" routing table to direct traffic destined for the cloud to the strongSwan VPN instance.
+`--delete` removes objects not present in `dist`; review the destination bucket
+before running it.
 
-1. Open the Amazon EC2 console 
+## Step 3: Configure CloudFront Routes
 
-2. Select the instance named infra-vpngw-test. From the Details tab, copy the Instance ID and paste this into your text editor
+| Path | Origin |
+| --- | --- |
+| `/` and static assets | Private frontend S3 bucket |
+| `/api/*` | Application Load Balancer |
+| `/ws/*` | Application Load Balancer with WebSocket upgrade |
+| `/api/wake` | IAM-protected Lambda origin in the reviewed target only |
 
-![ec2 id](/images/5-Workshop/5.4-S3-onprem/ec2-onprem-id.png)
+CloudFront terminates viewer HTTPS/WSS. The current CloudFront-to-ALB origin is
+HTTP, which is recorded as a residual security gap for a later ACM/custom
+origin-domain improvement.
 
-3. Navigate to the VPC menu by using the Search box at the top of the browser window.
+## Step 4: Keep Runtime Configuration External
 
-4. Click on Route Tables, select the RT Private On-prem route table, select the Routes tab, and click Edit Routes.
+Local development uses `frontend/.env`. Production values are injected during
+the build and are not hard-coded into reusable components. If no wake URL is
+configured, the frontend skips the optional wake flow and connects normally.
 
-![rt](/images/5-Workshop/5.4-S3-onprem/rt.png)
+After upload, invalidate CloudFront so the new files become visible without
+waiting for the normal cache lifetime:
 
-5. Click Add route.
-+ Destination: your Cloud VPC cidr range
-+ Target: ID of your infra-vpngw-test instance (you saved in your editor at step 1)
+```powershell
+aws cloudfront create-invalidation `
+  --distribution-id <distribution-id> --paths "/*"
+```
 
-![add route](/images/5-Workshop/5.4-S3-onprem/add-route.png)
+The deployed landing page and `/app` dashboard were verified on desktop and a
+390 px mobile viewport.
 
-6. Click Save changes
-
-
-
+![Step result: React landing page served through CloudFront](/images/3-Project/livecap-landing.png)

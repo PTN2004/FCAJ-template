@@ -1,40 +1,92 @@
 ---
-title : "Tạo một Gateway Endpoint"
-date : 2024-01-01 
-weight : 1
-chapter : false
-pre : " <b> 5.3.1 </b> "
+title: "Build và publish backend container"
+date: 2026-07-05
+weight: 1
+chapter: false
+pre: " <b> 5.3.1. </b> "
 ---
 
-1. Mở [Amazon VPC console](https://us-east-1.console.aws.amazon.com/vpc/home?region=us-east-1#Home:)
-2. Trong thanh điều hướng, chọn **Endpoints**, click **Create Endpoint**:
+# Build và publish backend container
 
-{{% notice note %}}
-Bạn sẽ thấy 6 điểm cuối VPC hiện có hỗ trợ AWS Systems Manager (SSM). Các điểm cuối này được Mẫu CloudFormation triển khai tự động cho workshop này.
-{{% /notice %}}
+## Bước 1: Kiểm tra backend
 
-![endpoint](/images/5-Workshop/5.3-S3-vpc/endpoints.png)
+FastAPI cung cấp `/api/health`, REST route export và `/ws/transcribe`. Trước khi
+build image, chạy:
 
-3. Trong Create endpoint console:
-+ Đặt tên cho endpoint: s3-gwe
-+ Trong service category, chọn **aws services**
+```powershell
+cd backend
+python -m pip install -r requirements-dev.txt
+python -m compileall app
+python -m pytest
+```
 
-![endpoint](/images/5-Workshop/5.3-S3-vpc/create-s3-gwe1.png)
+Baseline đồ án đã xác minh có 204 backend test pass.
 
-+ Trong **Services**, gõ "s3" trong hộp tìm kiếm và chọn dịch vụ với loại **gateway**
+## Bước 2: Build cho Fargate
 
-![endpoint](/images/5-Workshop/5.3-S3-vpc/services.png)
+Dockerfile cài dependency Python đã pin version, copy application, expose port
+8000 và có container health check. Image được build theo kiến trúc runtime của
+ECS và smoke test `/api/health` trước khi publish.
 
-+ Đối với VPC, chọn **VPC Cloud** từ drop-down menu.
-+ Đối với Route tables, chọn bảng định tuyến mà đã liên kết với 2 subnets (lưu ý: đây không phải là bảng định tuyến chính cho VPC mà là bảng định tuyến thứ hai do CloudFormation tạo).
+```powershell
+$imageTag = "$(git rev-parse --short HEAD)-amd64"
+docker buildx build --platform linux/amd64 --provenance=false `
+  -t "livecap-backend:$imageTag" --load .
+docker run --rm -d --name livecap-smoke -p 8000:8000 `
+  --env-file .env "livecap-backend:$imageTag"
+Invoke-RestMethod http://127.0.0.1:8000/api/health
+docker stop livecap-smoke
+```
 
-![endpoint](/images/5-Workshop/5.3-S3-vpc/vpc.png)
+Không đưa `.env` hoặc AWS credential vào image. Local dùng AWS profile; ECS
+inject setting và dùng IAM role khi chạy.
 
-+ Đối với Policy, để tùy chọn mặc định là Full access để cho phép toàn quyền truy cập vào dịch vụ. Bạn sẽ triển khai VPC endpoint policy trong phần sau để chứng minh việc hạn chế quyền truy cập vào S3 bucket dựa trên các policies.
+## Bước 3: Push image immutable
 
-![endpoint](/images/5-Workshop/5.3-S3-vpc/policy.png)
+ECR lưu backend image. Deployment tag được tạo từ Git commit thay vì `latest`,
+nhờ đó task definition luôn trỏ đến artifact có thể truy vết. Demo công khai đã
+xác minh dùng tag `1ef4250-amd64`.
 
-+ Không thêm tag vào VPC endpoint.
-+ Click Create endpoint, click x sau khi nhận được thông báo tạo thành công.
+```text
+source commit -> Docker image -> ECR tag immutable -> ECS task definition
+```
 
-![endpoint](/images/5-Workshop/5.3-S3-vpc/complete.png)
+Đăng nhập Docker vào ECR và push đúng immutable tag. Chỉ thay repository name
+khi môi trường target dùng ECR repository khác.
+
+```powershell
+$region = "ap-southeast-1"
+$accountId = aws sts get-caller-identity --query Account --output text
+$registry = "$accountId.dkr.ecr.$region.amazonaws.com"
+$repository = "$registry/livecap-backend"
+aws ecr get-login-password --region $region |
+  docker login --username AWS --password-stdin $registry
+docker tag "livecap-backend:$imageTag" "$repository:$imageTag"
+docker push "$repository:$imageTag"
+```
+
+## Bước 4: Tạo task definition revision
+
+Cập nhật image URI thành SHA tag vừa push, giữ container port 8000, inject
+environment và gắn execution/task role. Đăng ký revision mới thay vì sửa artifact
+cũ. Sau khi review revision, cập nhật ECS service và chờ service stable.
+
+```powershell
+aws ecs update-service --region ap-southeast-1 `
+  --cluster <cluster-name> --service <service-name> `
+  --task-definition <task-definition-family:revision>
+aws ecs wait services-stable --region ap-southeast-1 `
+  --cluster <cluster-name> --services <service-name>
+```
+
+Không chạy placeholder trực tiếp trên production. Phải xác nhận account,
+cluster, service, task-definition diff và rollback revision trước.
+
+## Tách IAM role
+
+- **Task execution role:** pull image từ ECR và ghi container log.
+- **Task role:** gọi Transcribe, Translate, transcript S3, CloudWatch và action
+  ECS scale-down tối thiểu nếu bật.
+- **Wake Lambda role:** chỉ describe/update ECS service được chọn trong target.
+
+Cách tách này ngăn application kế thừa quyền deployment quá rộng.

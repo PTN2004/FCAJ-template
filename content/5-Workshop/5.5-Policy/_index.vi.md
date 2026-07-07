@@ -1,95 +1,75 @@
 ---
-title : "VPC Endpoint Policies"
-date : 2024-01-01
-weight : 5
-chapter : false
-pre : " <b> 5.5 </b> "
+title: "Bảo mật, quan sát, kiểm thử và chi phí"
+date: 2026-07-05
+weight: 5
+chapter: false
+pre: " <b> 5.5. </b> "
 ---
 
-Khi bạn tạo một Interface Endpoint  hoặc cổng, bạn có thể đính kèm một chính sách điểm cuối để kiểm soát quyền truy cập vào dịch vụ mà bạn đang kết nối. Chính sách VPC Endpoint là chính sách tài nguyên IAM mà bạn đính kèm vào điểm cuối. Nếu bạn không đính kèm chính sách khi tạo điểm cuối, thì AWS sẽ đính kèm chính sách mặc định cho bạn để cho phép toàn quyền truy cập vào dịch vụ thông qua điểm cuối.
+# Bảo mật, quan sát, kiểm thử và chi phí
 
-Bạn có thể tạo chính sách chỉ hạn chế quyền truy cập vào các S3 bucket cụ thể. Điều này hữu ích nếu bạn chỉ muốn một số Bộ chứa S3 nhất định có thể truy cập được thông qua điểm cuối.
+## Control bảo mật đã triển khai
 
-Trong phần này, bạn sẽ tạo chính sách VPC Endpoint hạn chế quyền truy cập vào S3 bucket được chỉ định trong chính sách VPC Endpoint.
+- IAM role thay credential AWS tĩnh trong container và source code.
+- Frontend và transcript S3 bucket đều private; frontend truy cập qua OAC.
+- Transcript download dùng presigned URL có thời hạn.
+- Không lưu raw audio; transcript object hết hạn sau 14 ngày.
+- CORS giới hạn frontend origin được chấp nhận.
+- Giới hạn session global/per-IP và timeout 30 phút giảm abuse.
+- Gitleaks chạy trong CI; tfstate, tfvars, plan và `.env` thật không được track.
+- ECR image dùng tag immutable từ Git SHA và kết quả scan được review.
 
-![endpoint diagram](/images/5-Workshop/5.5-Policy/s3-bucket-policy.png)
+## Trạng thái WAF và network
 
-#### Kết nối tới EC2 và xác minh kết nối tới S3. 
+Terraform target định nghĩa hai Web ACL riêng: CloudFront (`CLOUDFRONT`) và ALB
+(`REGIONAL`), gồm managed rule và rate rule ở COUNT mode. COUNT chỉ quan sát
+traffic match, chưa block. Các WAF association này chưa deploy nên không được
+mô tả live demo là đã có WAF bảo vệ.
 
-1. Bắt đầu một phiên AWS Session Manager mới trên máy chủ có tên là Test-Gateway-Endpoint. Từ phiên này, xác minh rằng bạn có thể liệt kê nội dung của bucket mà bạn đã tạo trong Phần 1: Truy cập S3 từ VPC.
+Task hiện tại có public IP trong VPC hiện hữu. Target đã review tạo hai public
+và hai private subnet trên hai AZ, đặt ALB ở public subnet, Fargate ở private
+subnet và dùng một NAT Gateway. Một NAT là tradeoff tiết kiệm chi phí, đồng thời
+là outbound dependency single-AZ chứ không phải network HA đầy đủ.
 
-```
-aws s3 ls s3://<your-bucket-name>
-```
-![test](/images/5-Workshop/5.5-Policy/test1.png)
+## Quan sát hệ thống
 
-Nội dung của bucket bao gồm hai tệp có dung lượng 1GB đã được tải lên trước đó.
+- FastAPI phát structured session/integration log đến CloudWatch khi handler
+  khởi tạo được, nếu không sẽ fallback stdout.
+- Backend log retention là 14 ngày.
+- ALB, ECS và Lambda cung cấp metric CloudWatch chuẩn.
+- Terraform target định nghĩa dashboard cho ECS CPU/memory, ALB traffic/health,
+  wake Lambda và WAF mà không bật Container Insights tốn thêm phí.
 
-2. Tạo một bucket S3 mới; tuân thủ mẫu đặt tên mà bạn đã sử dụng trong Phần 1, nhưng thêm '-2' vào tên. Để các trường khác là mặc định và nhấp vào **Create**.
+Dashboard và WAF metric chỉ có ý nghĩa sau khi target resource tương ứng được
+apply và associate.
 
-![create bucket](/images/5-Workshop/5.5-Policy/create-bucket.png)
+## CI và verification
 
-3. Tạo bucket thành công.
+GitHub Actions kiểm tra mọi pull request và push vào main:
 
-![Success](/images/5-Workshop/5.5-Policy/create-bucket-success.png)
+1. Gitleaks scan secret với toàn bộ Git history.
+2. Python 3.11 compile backend và pytest.
+3. Node 20 cài frontend, chạy test và production build.
+4. Terraform 1.10.5 format/validate với `-backend=false`.
 
-Policy mặc định cho phép truy cập vào tất cả các S3 Buckets thông qua VPC endpoint.
+CI chủ ý không deploy production, Terraform apply, destroy hoặc migrate state.
 
-4. Trong giao diện **Edit Policy**, sao chép và dán theo policy sau, thay thế yourbucketname-2 với tên bucket thứ hai của bạn. Policy này sẽ cho phép truy cập đến bucket mới thông qua VPC endpoint, nhưng không cho phép truy cập đến các bucket còn lại. Chọn **Save** để kích hoạt policy.
+## Kiểm soát chi phí
 
+- Transcribe và Translate tính theo usage, chủ yếu chạy khi có session active.
+- Giới hạn duration/concurrency kiểm soát AI usage ngoài ý muốn.
+- Transcript và log cùng retention 14 ngày.
+- Terraform target có AWS Budget `$50/month` cấu hình được; alert billing có độ
+  trễ, không phải enforcement realtime.
+- Wake/idle target cho phép ECS `0 <-> 1`, nhưng live service hiện giữ một task
+  để demo ổn định.
 
-```
-{
-  "Id": "Policy1631305502445",
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "Stmt1631305501021",
-      "Action": "s3:*",
-      "Effect": "Allow",
-      "Resource": [
-      				"arn:aws:s3:::yourbucketname-2",
-       				"arn:aws:s3:::yourbucketname-2/*"
-       ],
-      "Principal": "*"
-    }
-  ]
-}
-```
+ALB, NAT Gateway và WAF vẫn có fixed/baseline cost khi tồn tại. Scale ECS về 0
+không xóa các khoản phí này.
 
-![custom policy](/images/5-Workshop/5.5-Policy/policy2.png)
+## Rủi ro còn lại
 
-Cấu hình policy thành công.
-
-![success](/images/5-Workshop/5.5-Policy/success.png)
-
-5. Từ session của bạn trên Test-Gateway-Endpoint instance, kiểm tra truy cập đến S3 bucket bạn tạo ở bước đầu
-
-```
-aws s3 ls s3://<yourbucketname>
-```
-
-Câu lệnh trả về lỗi bởi vì truy cập vào S3 bucket không có quyền trong VPC endpoint policy.
-
-![error](/images/5-Workshop/5.5-Policy/error.png)
-
-6. Trở lại home directory của bạn trên EC2 instance ```cd~```
-
-+ Tạo file ```fallocate -l 1G test-bucket2.xyz ```
-+ Sao chép file lên bucket thứ  2 ```aws s3 cp test-bucket2.xyz s3://<your-2nd-bucket-name>```
-
-![success](/images/5-Workshop/5.5-Policy/test2.png)
-
-Thao tác này được cho phép bởi VPC endpoint policy.
-
-![success](/images/5-Workshop/5.5-Policy/test2-success.png)
-
-Sau đó chúng ta kiểm tra truy cập vào S3 bucket đầu tiên
-
- ```aws s3 cp test-bucket2.xyz s3://<your-1st-bucket-name>```
-
- ![fail](/images/5-Workshop/5.5-Policy/test2-fail.png)
-
- Câu lệnh xảy ra lỗi bởi vì bucket không có quyền truy cập bởi VPC endpoint policy.
-
-Trong phần này, bạn đã tạo chính sách VPC Endpoint cho Amazon S3 và sử dụng AWS CLI để kiểm tra chính sách. Các hoạt động AWS CLI liên quan đến bucket S3 ban đầu của bạn thất bại vì bạn áp dụng một chính sách chỉ cho phép truy cập đến bucket thứ hai mà bạn đã tạo. Các hoạt động AWS CLI nhắm vào bucket thứ hai của bạn thành công vì chính sách cho phép chúng. Những chính sách này có thể hữu ích trong các tình huống khi bạn cần kiểm soát quyền truy cập vào tài nguyên thông qua VPC Endpoint.
+- CloudFront hiện kết nối ALB origin qua HTTP.
+- Registry in-memory chưa cho phép scale an toàn nhiều task.
+- Một active task khiến thay task làm gián đoạn WebSocket đang chạy.
+- Finding package nền trong ECR vẫn được theo dõi đến khi có bản vá tương thích.

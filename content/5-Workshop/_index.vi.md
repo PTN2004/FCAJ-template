@@ -1,33 +1,36 @@
 ---
-title: "Workshop"
-date: 2024-01-01
+title: "Workshop kỹ thuật"
+date: 2026-07-05
 weight: 5
 chapter: false
 pre: " <b> 5. </b> "
 ---
 
-{{% notice warning %}}
-⚠️ **Lưu ý:** Các thông tin dưới đây chỉ nhằm mục đích tham khảo, vui lòng **không sao chép nguyên văn** cho bài báo cáo của bạn kể cả warning này.
-{{% /notice %}}
+# Workshop kỹ thuật
 
+## LiveCap: Phụ đề song ngữ thời gian thực trên AWS
 
-# Đảm bảo truy cập Hybrid an toàn đến S3 bằng cách sử dụng VPC endpoint
+Workshop này mô tả phiên bản LiveCap đã hoàn thiện cho đồ án cuối khóa.
+LiveCap thu âm từ microphone trong ứng dụng React, stream PCM 16 kHz qua
+WebSocket đến backend FastAPI chạy trên Amazon ECS Fargate, tạo phụ đề bằng
+Amazon Transcribe, dịch phần văn bản đã hoàn tất bằng Amazon Translate và hiển
+thị hai cột tiếng Việt - tiếng Anh.
 
-#### Tổng quan
+Demo công khai hiện dùng CloudFront, S3 private để host frontend, Application
+Load Balancer, một ECS Fargate task, ECR, S3 private lưu transcript và
+CloudWatch. Chức năng export chỉ lưu transcript TXT đã hoàn tất; hệ thống không
+lưu raw audio.
 
-**AWS PrivateLink** cung cấp kết nối riêng tư đến các dịch vụ aws từ VPCs hoặc trung tâm dữ liệu (on-premise) mà không làm lộ lưu lượng truy cập ra ngoài public internet.
+Chương này phân biệt rõ môi trường đang chạy thật với kiến trúc target đã được
+review trong Terraform. Private Fargate, NAT, WAF, wake-on-demand,
+scale-to-zero, dashboard và budget là các control của target, chưa được mô tả
+như tài nguyên đã deploy.
 
-Trong bài lab này, chúng ta sẽ học cách tạo, cấu hình, và kiểm tra VPC endpoints để cho phép workload của bạn tiếp cận các dịch vụ AWS mà không cần đi qua Internet công cộng.
+## Các phần trong workshop
 
-Chúng ta sẽ tạo hai loại endpoints để truy cập đến Amazon S3: gateway vpc endpoint và interface vpc endpoint. Hai loại vpc endpoints này mang đến nhiều lợi ích tùy thuộc vào việc bạn truy cập đến S3 từ môi trường cloud hay từ trung tâm dữ liệu (on-premise).
-+ **Gateway** - Tạo gateway endpoint để gửi lưu lượng đến Amazon S3 hoặc DynamoDB using private IP addresses. Bạn điều hướng lưu lượng từ VPC của bạn đến gateway endpoint bằng các bảng định tuyến (route tables)
-+ **Interface** - Tạo interface endpoint để gửi lưu lượng đến các dịch vụ điểm cuối (endpoints) sử dụng Network Load Balancer để phân phối lưu lượng. Lưu lượng dành cho dịch vụ điểm cuối được resolved bằng DNS.
-
-#### Nội dung
-
-1. [Tổng quan về workshop](5.1-Workshop-overview/)
-2. [Chuẩn bị](5.2-Prerequiste/)
-3. [Truy cập đến S3 từ VPC](5.3-S3-vpc/)
-4. [Truy cập đến S3 từ TTDL On-premises](5.4-S3-onprem/)
-5. [VPC Endpoint Policies (làm thêm)](5.5-Policy/)
-6. [Dọn dẹp tài nguyên](5.6-Cleanup/)
+1. Sản phẩm, kiến trúc và các luồng runtime.
+2. Điều kiện phát triển và quyền AWS cần thiết.
+3. Backend FastAPI dạng container trên ECS Fargate.
+4. Phân phối frontend và tích hợp AWS thời gian thực.
+5. Bảo mật, quan sát hệ thống, kiểm thử và kiểm soát chi phí.
+6. An toàn release, kết quả đã xác minh và phần việc còn lại.

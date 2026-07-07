@@ -1,18 +1,21 @@
 ---
-title : "Truy cập S3 từ VPC"
-date : 2024-01-01 
-weight : 3
-chapter : false
-pre : " <b> 5.3. </b> "
+title: "Backend dạng container trên ECS Fargate"
+date: 2026-07-05
+weight: 3
+chapter: false
+pre: " <b> 5.3. </b> "
 ---
 
-#### Sử dụng Gateway endpoint
+# Backend dạng container trên ECS Fargate
 
-Trong phần này, bạn sẽ tạo một Gateway endpoint để truy cập Amazon S3 từ một EC2 instance. Gateway endpoint sẽ cho phép tải một object lên S3 bucket mà không cần sử dụng Internet Công cộng. Để tạo endpoint, bạn phải chỉ định VPC mà bạn muốn tạo endpoint và dịch vụ (trong trường hợp này là S3) mà bạn muốn thiết lập kết nối.
+Backend EC2 đơn lẻ ban đầu đã được thay bằng dịch vụ FastAPI đóng gói Docker và
+chạy trên Amazon ECS Fargate. Amazon ECR lưu image immutable, ECS duy trì task
+mong muốn, còn ALB health check và forward HTTP/WebSocket đến port 8000 của container.
 
-![overview](/images/5-Workshop/5.3-S3-vpc/diagram2.png)
+Demo đã xác minh hiện chạy một task trong VPC hiện hữu với public IP. ALB trải
+trên hai public subnet. Hệ thống có thể tự thay task lỗi nhưng không phải
+active-active HA vì service được giới hạn một task khi session state còn nằm
+trong memory của process.
 
-#### Nội dung
-
-- [Tạo gateway endpoint](3.1-create-gwe/)
-- [Test gateway endpoint](3.2-test-gwe/)
+Kiến trúc target giữ luồng ALB -> ECS, nhưng chuyển task vào hai private subnet,
+tắt public IP và dùng một NAT Gateway cho outbound đến AWS API và ECR.

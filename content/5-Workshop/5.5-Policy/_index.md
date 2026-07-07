@@ -1,99 +1,76 @@
 ---
-title : "VPC Endpoint Policies"
-date : 2024-01-01
-weight : 5
-chapter : false
-pre : " <b> 5.5. </b> "
+title: "Security, Observability, Testing, and Cost"
+date: 2026-07-05
+weight: 5
+chapter: false
+pre: " <b> 5.5. </b> "
 ---
 
-When you create an interface or gateway endpoint, you can attach an endpoint policy to it that controls access to the service to which you are connecting. A VPC endpoint policy is an IAM resource policy that you attach to an endpoint. If you do not attach a policy when you create an endpoint, AWS attaches a default policy for you that allows full access to the service through the endpoint.
+# Security, Observability, Testing, and Cost
 
-You can create a policy that restricts access to specific S3 buckets only. This is useful if you only want certain S3 Buckets to be accessible through the endpoint.
+## Security Controls Already Implemented
 
-In this section you will create a VPC endpoint policy that restricts access to the S3 bucket specified in the VPC endpoint policy.
+- IAM roles replace static AWS credentials in containers and source code.
+- Frontend and transcript S3 buckets are private; frontend access uses OAC.
+- Transcript downloads use expiring presigned URLs.
+- Raw audio is not stored; transcript objects expire after 14 days.
+- CORS restricts the accepted frontend origin.
+- Global/per-IP session limits and a 30-minute timeout reduce abuse exposure.
+- Gitleaks runs in CI, while tfstate, tfvars, plans, and real `.env` files remain untracked.
+- ECR images use immutable SHA-derived tags and scanning results are reviewed.
 
-![endpoint diagram](/images/5-Workshop/5.5-Policy/s3-bucket-policy.png)
+## WAF and Network Status
 
-#### Connect to an EC2 instance and verify connectivity to S3
+The Terraform target defines separate CloudFront (`CLOUDFRONT`) and ALB
+(`REGIONAL`) Web ACLs with managed rules and rate rules in COUNT mode. COUNT
+observes matching traffic without blocking it. These WAF associations are not
+currently deployed, so the live demo must not be described as WAF-protected.
 
-1. Start a new AWS Session Manager session on the instance named Test-Gateway-Endpoint. From the session, verify that you can list the contents of the bucket you created in Part 1: Access S3 from VPC:
+The current task has a public IP in the existing VPC. The reviewed target adds
+two public and two private subnets across two AZs, places the ALB in public
+subnets, moves Fargate to private subnets, and uses one NAT Gateway. One NAT is
+a cost-sensitive single-AZ outbound tradeoff, not full network HA.
 
-```
-aws s3 ls s3://\<your-bucket-name\>
-```
-![test](/images/5-Workshop/5.5-Policy/test1.png)
+## Observability
 
-The bucket contents include the two 1 GB files uploaded in earlier.
+- FastAPI emits structured session and integration logs to CloudWatch when the
+  handler is available, with stdout fallback.
+- Backend log retention is 14 days.
+- ALB, ECS, and Lambda expose standard CloudWatch metrics.
+- A dashboard for ECS CPU/memory, ALB traffic/health, wake Lambda, and WAF is
+  defined in target Terraform without enabling paid Container Insights.
 
-2. Create a new S3 bucket; follow the naming pattern you used in Part 1, but add a '-2' to the name. Leave other fields as default and click create
+The dashboard and WAF metrics become useful only after the corresponding
+target resources are applied and associated.
 
-![create bucket](/images/5-Workshop/5.5-Policy/create-bucket.png)
+## CI and Verification
 
-Successfully create bucket
+GitHub Actions validates every pull request and main push:
 
-![Success](/images/5-Workshop/5.5-Policy/create-bucket-success.png)
+1. Gitleaks secret scan with full Git history.
+2. Python 3.11 backend compile and pytest.
+3. Node 20 frontend install, tests, and production build.
+4. Terraform 1.10.5 format and validation with `-backend=false`.
 
-3. Navigate to: Services > VPC > Endpoints, then select the Gateway VPC endpoint you created earlier. Click the Policy tab. Click Edit policy.
+CI deliberately performs no production deployment, Terraform apply, destroy,
+or state migration.
 
-![policy](/images/5-Workshop/5.5-Policy/policy1.png)
+## Cost Controls
 
-The default policy allows access to all S3 Buckets through the VPC endpoint.
+- Transcribe and Translate are usage-based and run mainly during active sessions.
+- Session duration/concurrency limits bound accidental AI usage.
+- Transcript and log retention are both 14 days.
+- A configurable `$50/month` AWS Budget exists in target Terraform; alerts are
+  delayed billing signals, not real-time enforcement.
+- Reviewed ECS wake/idle logic allows `0 <-> 1` tasks, but the live service
+  currently remains at one task for submission stability.
 
-4. In Edit Policy console, copy & Paste the following policy, then replace yourbucketname-2 with your 2nd bucket name. This policy will allow access through the VPC endpoint to your new bucket, but not any other bucket in Amazon S3. Click Save to apply the policy.
+ALB, NAT Gateway, and WAF have fixed or baseline charges while provisioned.
+Scaling ECS to zero does not remove those costs.
 
-```
-{
-  "Id": "Policy1631305502445",
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "Stmt1631305501021",
-      "Action": "s3:*",
-      "Effect": "Allow",
-      "Resource": [
-      				"arn:aws:s3:::yourbucketname-2",
-       				"arn:aws:s3:::yourbucketname-2/*"
-       ],
-      "Principal": "*"
-    }
-  ]
-}
-```
+## Residual Risks
 
-![custom policy](/images/5-Workshop/5.5-Policy/policy2.png)
-
-Successfully customize policy
-
-![success](/static/images/5-Workshop/5.5-Policy/success.png)
-
-5. From your session on the Test-Gateway-Endpoint instance, test access to the S3 bucket you created in Part 1: Access S3 from VPC
-```
-aws s3 ls s3://<yourbucketname>
-```
-
-This command will return an error because access to this bucket is not permitted by your new VPC endpoint policy:
-
-![error](/static/images/5-Workshop/5.5-Policy/error.png)
-
-6. Return to your home directory on your EC2 instance ` cd~ `
-
-+ Create a file ```fallocate -l 1G test-bucket2.xyz ```
-+ Copy file to 2nd bucket ```aws s3 cp test-bucket2.xyz s3://<your-2nd-bucket-name>```
-
-![success](/static/images/5-Workshop/5.5-Policy/test2.png)
-
-This operation succeeds because it is permitted by the VPC endpoint policy.
-
-![success](/static/images/5-Workshop/5.5-Policy/test2-success.png)
-
-+ Then we test access to the first bucket by copy the file to 1st bucket `aws s3 cp test-bucket2.xyz s3://<your-1st-bucket-name>`
-
-![fail](/static/images/5-Workshop/5.5-Policy/test2-fail.png)
-
-This command will return an error because access to this bucket is not permitted by your new VPC endpoint policy.
-
-#### Part 3 Summary:
-
-In this section, you created a VPC endpoint policy for Amazon S3, and used the AWS CLI to test the policy. AWS CLI actions targeted to your original S3 bucket failed because you applied a policy that only allowed access to the second bucket you created. AWS CLI actions targeted for your second bucket succeeded because the policy allowed them. These policies can be useful in situations where you need to control access to resources through VPC endpoints.
-
-
+- CloudFront currently connects to the ALB over HTTP.
+- One in-memory session registry prevents safe multi-task scaling.
+- One active task means replacement interrupts live WebSocket sessions.
+- ECR base-image package findings remain tracked until compatible fixes exist.

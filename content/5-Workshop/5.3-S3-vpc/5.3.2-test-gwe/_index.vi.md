@@ -1,82 +1,50 @@
 ---
-title : "Kiểm tra Gateway Endpoint"
-date : 2024-01-01 
-weight : 2
-chapter : false
-pre : " <b> 5.3.2 </b> "
+title: "Deploy và xác minh ECS Fargate"
+date: 2026-07-05
+weight: 2
+chapter: false
+pre: " <b> 5.3.2. </b> "
 ---
 
-#### Tạo S3 bucket
+# Deploy và xác minh ECS Fargate
 
-1. Đi đến S3 management console
-2. Trong Bucket console, chọn **Create bucket**
+## Thành phần runtime
 
-![Create bucket](/images/5-Workshop/5.3-S3-vpc/create-bucket.png)
+1. ECS task definition tham chiếu ECR image immutable, port 8000, environment,
+   execution role và task role.
+2. ECS service duy trì task mong muốn và đăng ký task vào ALB target group.
+3. ALB kiểm tra `/api/health` và chỉ forward đến target healthy.
+4. CloudFront route `/api/*` và `/ws/*` đến ALB origin.
 
-3. Trong Create bucket console
-+ Đặt tên bucket: chọn 1 tên mà không bị trùng trong phạm vi toàn cầu (gợi ý: lab\<số-lab\>\<tên-bạn\>)
+## An toàn session
 
-![Bucket name](/images/5-Workshop/5.3-S3-vpc/bucket-name.png)
+Trước khi mở Transcribe, WebSocket handler xác định client IP và kiểm tra active
+session registry trong memory. Giới hạn tham chiếu là bốn session toàn hệ thống
+và một session trên mỗi IP. Client vượt giới hạn nhận `TOO_MANY_SESSIONS` mà
+không mở công việc Transcribe/Translate tốn phí.
 
+Mọi đường kết thúc đều unregister session, cleanup audio queue và worker task.
+Backend còn hỗ trợ heartbeat ping/pong và timeout 30 phút.
 
-+ Giữ nguyên giá trị của các fields khác (default)
-+ Kéo chuột xuống và chọn **Create bucket**
+## Cơ chế availability
 
-![Create](/images/5-Workshop/5.3-S3-vpc/create-button.png)    
+ECS thay task unhealthy, còn ALB chỉ route sau khi health check pass. Vì
+desired/max capacity là một, quá trình thay task gây gián đoạn ngắn và kết thúc
+WebSocket active. Muốn tăng trên một task phải chuyển registry sang DynamoDB
+hoặc Redis trước.
 
-+ Tạo thành công S3 bucket
+## Trạng thái hiện tại đã xác minh
 
-![Success](/images/5-Workshop/5.3-S3-vpc/bucket-success.png)
+| Hạng mục | Giá trị đã xác minh |
+| --- | --- |
+| Region | `ap-southeast-1` |
+| ALB | Public, trải trên `1a` và `1b` |
+| ECS desired/running | `1/1` |
+| Network của task | Public subnet trong VPC hiện hữu, có public IP |
+| Task definition | `livecap-backend-dev:5` |
+| Container image | `1ef4250-amd64` |
 
-#### Kết nối với EC2 bằng session manager
+Task private và wake/idle `0 <-> 1` là thay đổi target, không phải mô tả môi
+trường public hiện tại.
 
-+ Trong workshop này, bạn sẽ dùng AWS Session Manager để kết nối đến các EC2 instances. Session Manager là 1 tính năng trong dịch vụ Systems Manager được quản lý hoàn toàn bởi AWS. System manager cho phép bạn quản lý Amazon EC2 instances và các máy ảo on-premises (VMs)thông qua 1 browser-based shell. Session Manager cung cấp khả năng quản lý phiên bản an toàn và có thể kiểm tra mà không cần mở cổng vào, duy trì máy chủ bastion host hoặc quản lý khóa SSH.
-
-+ First Cloud AI Journey [Lab](https://000058.awsstudygroup.com/1-introduce/) để hiểu sâu hơn về Session manager.
-
-1. Trong AWS Management Console, gõ Systems Manager trong ô tìm kiếm và nhấn Enter:
-
-![system manager](/images/5-Workshop/5.3-S3-vpc/sm.png)
-
-2. Từ **Systems Manager** menu, tìm **Node Management** ở thanh bên trái và chọn **Session Manager**:
-
-![system manager](/images/5-Workshop/5.3-S3-vpc/sm1.png)
-
-3. Click Start Session, và chọn EC2 instance tên **Test-Gateway-Endpoint**. 
-{{% notice info %}}
-Phiên bản EC2 này đã chạy trong "VPC cloud" và sẽ được dùng để kiểm tra khả năng kết nối với Amazon S3 thông qua điểm cuối Cổng mà bạn vừa tạo (s3-gwe). {{% /notice %}}
-
-![Start session](/images/5-Workshop/5.3-S3-vpc/start-session.png)
-
-Session Manager sẽ mở browser tab mới với shell prompt: sh-4.2 $
-
-![Success](/images/5-Workshop/5.3-S3-vpc/start-session-success.png)
-
-Bạn đã bắt đầu phiên kết nối đến EC2 trong VPC Cloud thành công. Trong bước tiếp theo, chúng ta sẽ tạo một  S3 bucket và một tệp trong đó.
-#### Create a file and upload to s3 bucket
-
-1. Đổi về ssm-user's thư mục bằng lệnh "cd ~" 
-
-![Change user's dir](/images/5-Workshop/5.3-S3-vpc/cli1.png)
-
-2. Tạo 1 file để kiểm tra bằng lệnh "fallocate -l 1G testfile.xyz", 1 file tên "testfile.xyz" có kích thước 1GB sẽ được tạo.
-
-![Create file](/images/5-Workshop/5.3-S3-vpc/cli-file.png)
-
-3. Tải file mình vừa tạo lên S3 với lệnh "aws s3 cp testfile.xyz s3://your-bucket-name". Thay your-bucket-name bằng tên S3 bạn đã tạo.
-
-![Uploaded](/images/5-Workshop/5.3-S3-vpc/uploaded.png)
-
-Bạn đã tải thành công tệp lên bộ chứa S3 của mình. Bây giờ bạn có thể kết thúc session.
-
-#### Kiểm tra object trong S3 bucket
-
-1. Đi đến S3 console.  
-2. Click tên s3 bucket của bạn
-3. Trong Bucket console, bạn sẽ thấy tệp bạn đã tải lên S3 bucket của mình
-
-![Check S3](/images/5-Workshop/5.3-S3-vpc/check-s3-bucket.png)
-
-#### Tóm tắt
-
-Chúc mừng bạn đã hoàn thành truy cập S3 từ VPC. Trong phần này, bạn đã tạo gateway endpoint cho Amazon S3 và sử dụng AWS CLI để tải file lên. Quá trình tải lên hoạt động vì gateway endpoint cho phép giao tiếp với S3 mà không cần Internet gateway gắn vào "VPC Cloud". Điều này thể hiện chức năng của gateway endpoint như một đường dẫn an toàn đến S3 mà không cần đi qua pub    lic Internet.
+![Network và service placement trong target đã review](/images/3-Project/livecap-target-architecture.png)

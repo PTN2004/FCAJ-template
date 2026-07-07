@@ -1,95 +1,51 @@
 ---
-title : "Test the Gateway Endpoint"
-date : 2024-01-01 
-weight : 2
-chapter : false
-pre : " <b> 5.3.2 </b> "
+title: "Deploy and Verify ECS Fargate"
+date: 2026-07-05
+weight: 2
+chapter: false
+pre: " <b> 5.3.2. </b> "
 ---
 
-#### Create S3 bucket
+# Deploy and Verify ECS Fargate
 
-1. Navigate to **S3 management console**
-2. In the Bucket console, choose **Create bucket**
+## Runtime Components
 
-![Create bucket](/images/5-Workshop/5.3-S3-vpc/create-bucket.png)
+1. An ECS task definition references the immutable ECR image, port 8000,
+   environment settings, execution role, and task role.
+2. An ECS service maintains the desired task and registers it in the ALB target
+   group.
+3. The ALB checks `/api/health` and forwards only to healthy targets.
+4. CloudFront routes `/api/*` and `/ws/*` to the ALB origin.
 
-3. In **the Create bucket console**
-+ **Name the bucket**: choose a name that hasn't been given to any bucket globally (hint: lab number and your name)
+## Session Safety
 
-![Bucket name](/images/5-Workshop/5.3-S3-vpc/bucket-name.png)
+Before starting Transcribe, the WebSocket handler resolves the client IP and
+checks an in-memory active-session registry. The reference limits are four
+concurrent sessions globally and one per IP. Rejected clients receive
+`TOO_MANY_SESSIONS` without opening costly Transcribe/Translate work.
 
-+ Leave other fields as they are (default)
-+ Scroll down and choose **Create bucket**
+Every exit path unregisters the session and cleans up audio queues and worker
+tasks. The backend also supports ping/pong heartbeat and a 30-minute timeout.
 
-![Create](/images/5-Workshop/5.3-S3-vpc/create-button.png) 
+## Availability Behavior
 
-+ Successfully create S3 bucket.
+ECS replaces an unhealthy task and the ALB routes only after health checks pass.
+Because desired/max capacity is one, replacement causes a short interruption
+and terminates the active WebSocket. Increasing beyond one task requires moving
+the registry to DynamoDB or Redis first.
 
-![Success](/images/5-Workshop/5.3-S3-vpc/bucket-success.png)
+## Verified Current State
 
-#### Connect to EC2 with session manager
+| Item | Verified value |
+| --- | --- |
+| Region | `ap-southeast-1` |
+| ALB | Public, spanning `1a` and `1b` |
+| ECS desired/running | `1/1` |
+| Task networking | Existing VPC public subnet, public IP enabled |
+| Task definition | `livecap-backend-dev:5` |
+| Container image | `1ef4250-amd64` |
 
-+ For this workshop, you will use **AWS Session Manager** to access several **EC2 instances**. **Session Manager** is a fully managed **AWS Systems Manager** capability that allows you to manage your **Amazon EC2 instances**  and on-premises virtual machines (VMs) through an interactive one-click browser-based shell. Session Manager provides secure and auditable instance management without the need to open inbound ports, maintain bastion hosts, or manage SSH keys.
+Private task networking and `0 <-> 1` wake/idle behavior are target changes,
+not claims about the current public environment.
 
-+ First Cloud AI Journey [Lab](https://000058.awsstudygroup.com/1-introduce/) for indepth understanding of Session manager.
-
-1. In the **AWS Management Console**, start typing ```Systems Manager``` in the quick search box and press **Enter**:
-
-![system manager](/images/5-Workshop/5.3-S3-vpc/sm.png)
-
-2. From the **Systems Manager** menu, find **Node Management** in the left menu and click **Session Manager**:
-
-![system manager](/images/5-Workshop/5.3-S3-vpc/sm1.png)
-
-3. Click **Start Session**, and select **the EC2 instance** named **Test-Gateway-Endpoint**. 
-{{% notice info %}}
-This EC2 instance is already running in "VPC Cloud" and will be used to test connectivity to Amazon S3 through the Gateway endpoint you just created (s3-gwe). {{% /notice %}}
-
-![Start session](/images/5-Workshop/5.3-S3-vpc/start-session.png)
-
-**Session Manager** will open a new browser tab with a shell prompt: sh-4.2 $
-
-![Success](/images/5-Workshop/5.3-S3-vpc/start-session-success.png)
-
-You have successfully start a session - connect to the EC2 instance in VPC cloud. In the next step, we will create a S3 bucket and a file in it. 
-
-#### Create a file and upload to s3 bucket
-
-1. Change to the ssm-user's home directory by typing ```cd ~``` in the CLI
-
-![Change user's dir](/images/5-Workshop/5.3-S3-vpc/cli1.png)
-
-2. Create a new file to use for testing with the command ```fallocate -l 1G testfile.xyz```, which will create a file of 1GB size named "testfile.xyz".
-
-![Create file](/images/5-Workshop/5.3-S3-vpc/cli-file.png)
-
-3. Upload file to S3 bucket with command ```aws s3 cp testfile.xyz s3://your-bucket-name```. Replace your-bucket-name with the name of S3 bucket that you created earlier.
-
-![Uploaded](/images/5-Workshop/5.3-S3-vpc/uploaded.png)
-
-You have successfully uploaded the file to your S3 bucket. You can now terminate the session.
-
-#### Check object in S3 bucket
-
-1. Navigate to S3 console.  
-2. Click the name of your s3 bucket
-3. In the Bucket console, you will see the file you have uploaded to your S3 bucket
-
-![Check S3](/images/5-Workshop/5.3-S3-vpc/check-s3-bucket.png)
-
-#### Section summary
-
-Congratulation on completing access to S3 from VPC. In this section, you created a Gateway endpoint for Amazon S3, and used the AWS CLI to upload an object. The upload worked because the Gateway endpoint allowed communication to S3, without needing an Internet Gateway attached to "VPC Cloud". This demonstrates the functionality of the Gateway endpoint as a secure path to S3 without traversing the Public Internet.
-
-
-
-
-
-
-
-
-
-
-
-
-
+![Network and service placement planned for the reviewed target](/images/3-Project/livecap-target-architecture.png)

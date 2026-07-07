@@ -1,58 +1,76 @@
 ---
-title : "Chuẩn bị tài nguyên"
-date : 2024-01-01
-weight : 1
-chapter : false
-pre : " <b> 5.4.1 </b> "
+title: "Build và phân phối React frontend"
+date: 2026-07-05
+weight: 1
+chapter: false
+pre: " <b> 5.4.1. </b> "
 ---
 
-Để chuẩn bị cho phần này của workshop, bạn sẽ cần phải:
-+ Triển khai CloudFormation stack
-+ Sửa đổi bảng định tuyến VPC.
+# Build và phân phối React frontend
 
-Các thành phần này hoạt động cùng nhau để mô phỏng DNS forwarding và name resolution.
+## Bước 1: Test và build
 
-#### Triển khai CloudFormation stack
+```powershell
+cd frontend
+npm ci
+npm test
+npm run build
+```
 
-Mẫu CloudFormation sẽ tạo các dịch vụ bổ sung để hỗ trợ mô phỏng môi trường truyền thống:
-+ Một Route 53 Private Hosted Zone lưu trữ các bản ghi Bí danh (Alias records) cho điểm cuối PrivateLink S3
-+ Một Route 53 Inbound Resolver endpoint cho phép "VPC Cloud" giải quyết các yêu cầu resolve DNS gửi đến Private Hosted Zone
-+ Một Route 53 Outbound Resolver endpoint cho phép "VPC On-prem" chuyển tiếp các yêu cầu DNS cho S3 sang "VPC Cloud"
+Build chạy TypeScript checking và tạo output Vite `dist`. Baseline đã xác minh
+có 11 frontend test pass và không có production npm vulnerability đã biết tại
+thời điểm release.
 
-![route 53 diagram](/images/5-Workshop/5.4-S3-onprem/route53.png)
+Kiểm tra site build trước khi upload:
 
-1. Click link sau để mở [AWS CloudFormation console](https://us-east-1.console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/quickcreate?templateURL=https://s3.amazonaws.com/reinvent-endpoints-builders-session/R53CF.yaml&stackName=PLOnpremSetup). Mẫu yêu cầu sẽ được tải sẵn vào menu. Chấp nhận tất cả mặc định và nhấp vào Tạo stack.
+```powershell
+npm run preview -- --host 127.0.0.1
+# Mở http://127.0.0.1:4173 và kiểm tra / cùng /app.
+```
 
-![Create stack](/images/5-Workshop/5.4-S3-onprem/create-stack.png)
+## Bước 2: Lưu static asset ở S3 private
 
-![Button](/images/5-Workshop/5.4-S3-onprem/create-stack-button.png)
+Frontend bucket chặn public access, bật encryption và versioning. Browser truy
+cập qua CloudFront Origin Access Control thay vì S3 website endpoint hoặc
+bucket policy public.
 
-Có thể mất vài phút để triển khai stack hoàn tất. Bạn có thể tiếp tục với bước tiếp theo mà không cần đợi quá trình triển khai kết thúc.
+Sau khi xác nhận AWS account và bucket, đồng bộ output build:
 
-####  Cập nhật bảng định tuyến private on-premise 
+```powershell
+aws s3 sync dist "s3://<frontend-bucket>" --delete `
+  --region ap-southeast-1
+```
 
-Workshop này sử dụng StrongSwan VPN chạy trên EC2 instance để mô phỏng khả năng kết nối giữa trung tâm dữ liệu truyền thống và môi trường cloud AWS. Hầu hết các thành phần bắt buộc đều được cung cấp trước khi bạn bắt đầu. Để hoàn tất cấu hình VPN, bạn sẽ sửa đổi bảng định tuyến "VPC on-prem" để hướng lưu lượng đến cloud đi qua StrongSwan VPN instance.
+`--delete` xóa object không còn trong `dist`; phải review destination bucket
+trước khi chạy.
 
-1. Mở Amazon EC2 console 
+## Bước 3: Cấu hình route CloudFront
 
-2. Chọn instance tên infra-vpngw-test. Từ Details tab, copy Instance ID và paste vào text editor của bạn để sử dụng ở những bước tiếp theo
+| Path | Origin |
+| --- | --- |
+| `/` và static asset | S3 frontend private |
+| `/api/*` | Application Load Balancer |
+| `/ws/*` | ALB với WebSocket upgrade |
+| `/api/wake` | Lambda origin có IAM trong target đã review |
 
-![ec2 id](/images/5-Workshop/5.4-S3-onprem/ec2-onprem-id.png)
+CloudFront terminate HTTPS/WSS phía viewer. Kết nối CloudFront-to-ALB hiện dùng
+HTTP; đây là security gap còn lại, cần ACM/custom origin domain trong bước sau.
 
-3. Đi đến VPC menu bằng cách gõ "VPC" vào Search box
+## Bước 4: Tách runtime configuration
 
-4. Click vào Route Tables, chọn RT Private On-prem route table, chọn Routes tab, và click Edit Routes.
+Local dùng `frontend/.env`. Giá trị production được inject lúc build thay vì
+hard-code trong component. Nếu không cấu hình wake URL, frontend bỏ qua wake
+flow tùy chọn và kết nối theo luồng bình thường.
 
-![rt](/images/5-Workshop/5.4-S3-onprem/rt.png)
+Sau upload, invalidate CloudFront để file mới hiển thị mà không phải chờ cache
+lifetime thông thường:
 
-5. Click Add route.
-+ Destination: CIDR block của Cloud VPC
-+ Target: ID của infra-vpngw-test instance (bạn đã lưu lại ở bước trên)
+```powershell
+aws cloudfront create-invalidation `
+  --distribution-id <distribution-id> --paths "/*"
+```
 
-![add route](/images/5-Workshop/5.4-S3-onprem/add-route.png)
+Landing page và dashboard `/app` đã được xác minh trên desktop và viewport
+mobile rộng 390 px.
 
-6. Click Save changes
-
-
-
-
+![Kết quả bước triển khai React landing page qua CloudFront](/images/3-Project/livecap-landing.png)

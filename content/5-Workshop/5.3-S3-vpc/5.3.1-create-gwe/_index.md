@@ -1,40 +1,95 @@
 ---
-title : "Create a gateway endpoint"
-date : 2024-01-01 
-weight : 1
-chapter : false
-pre : " <b> 5.3.1 </b> "
+title: "Build and Publish the Backend Container"
+date: 2026-07-05
+weight: 1
+chapter: false
+pre: " <b> 5.3.1. </b> "
 ---
 
-1. Open the [Amazon VPC console](https://us-east-1.console.aws.amazon.com/vpc/home?region=us-east-1#Home:)
-2. In the navigation pane, choose **Endpoints**, then click **Create Endpoint**:
+# Build and Publish the Backend Container
 
-{{% notice note %}}
-You will see **6 existing VPC endpoints** that support **AWS Systems Manager (SSM)**. These endpoints were deployed automatically by the **CloudFormation Templates** for this workshop.
-{{% /notice %}}
+## Step 1: Verify the Backend
 
-![endpoint](/images/5-Workshop/5.3-S3-vpc/endpoints.png)
+The FastAPI application exposes `/api/health`, REST export routes, and
+`/ws/transcribe`. Before building an image, run:
 
-3. In the Create endpoint console:
-+ Specify name of the endpoint: ```s3-gwe```
-+ In service category, choose **AWS services**
+```powershell
+cd backend
+python -m pip install -r requirements-dev.txt
+python -m compileall app
+python -m pytest
+```
 
-![endpoint](/images/5-Workshop/5.3-S3-vpc/create-s3-gwe1.png)
+The verified submission baseline contains 204 passing backend tests.
 
-+ In **Services**, type ```s3``` in the search box and choose the service with type **gateway**
+## Step 2: Build for Fargate
 
-![endpoint](/images/5-Workshop/5.3-S3-vpc/services.png)
+The repository Dockerfile installs pinned Python dependencies, copies the
+application, exposes port 8000, and includes a container health check. Build
+for the ECS runtime architecture and smoke-test `/api/health` locally.
 
-+ For VPC, select **VPC Cloud** from the drop-down.
-+ For **Configure route tables**, select the route table that is already associated with **two subnets** (note: this is not the main route table for the VPC, but a second route table created by CloudFormation).
+```powershell
+$imageTag = "$(git rev-parse --short HEAD)-amd64"
+docker buildx build --platform linux/amd64 --provenance=false `
+  -t "livecap-backend:$imageTag" --load .
+docker run --rm -d --name livecap-smoke -p 8000:8000 `
+  --env-file .env "livecap-backend:$imageTag"
+Invoke-RestMethod http://127.0.0.1:8000/api/health
+docker stop livecap-smoke
+```
 
-![endpoint](/images/5-Workshop/5.3-S3-vpc/vpc.png)
+Do not bake `.env` or AWS credentials into the image. Local execution uses an
+AWS profile; ECS injects settings and uses IAM roles at runtime.
 
-+ **For Policy**, leave the default option, **Full Access**, to allow full access to the service. You will deploy **a VPC endpoint policy** in a later lab module to demonstrate restricting access to **S3 buckets** based on policies.
+## Step 3: Push an Immutable Image
 
-![endpoint](/images/5-Workshop/5.3-S3-vpc/policy.png)
+ECR stores the backend image. The deployment tag is derived from the Git commit
+instead of `latest`, so a task definition points to a reproducible artifact.
+The verified public demo uses image tag `1ef4250-amd64`.
 
-+ Do not add a tag to the VPC endpoint at this time.
-+ Click **Create endpoint**, then click x after receiving a successful creation message.
+```text
+source commit -> Docker image -> immutable ECR tag -> ECS task definition
+```
 
-![endpoint](/images/5-Workshop/5.3-S3-vpc/complete.png)
+Authenticate Docker and push the same immutable tag. Replace the repository
+name only when the target environment uses another ECR repository.
+
+```powershell
+$region = "ap-southeast-1"
+$accountId = aws sts get-caller-identity --query Account --output text
+$registry = "$accountId.dkr.ecr.$region.amazonaws.com"
+$repository = "$registry/livecap-backend"
+aws ecr get-login-password --region $region |
+  docker login --username AWS --password-stdin $registry
+docker tag "livecap-backend:$imageTag" "$repository:$imageTag"
+docker push "$repository:$imageTag"
+```
+
+## Step 4: Create a Task Definition Revision
+
+Update the task definition image URI to the pushed SHA tag, keep container port
+8000, inject environment values, and attach the execution/task roles. Register
+a new revision rather than mutating an old artifact. Then update the ECS service
+to that reviewed revision and wait for stability.
+
+```powershell
+aws ecs update-service --region ap-southeast-1 `
+  --cluster <cluster-name> --service <service-name> `
+  --task-definition <task-definition-family:revision>
+aws ecs wait services-stable --region ap-southeast-1 `
+  --cluster <cluster-name> --services <service-name>
+```
+
+Do not use these placeholders blindly in production. Confirm the account,
+cluster, service, task-definition diff, and rollback revision first.
+
+## IAM Separation
+
+- **Task execution role:** pull from ECR and write container logs.
+- **Task role:** call Transcribe, Translate, transcript S3, CloudWatch, and the
+  optional least-privilege ECS scale-down action.
+- **Wake Lambda role:** only describe/update the selected ECS service in the
+  reviewed target.
+
+This separation prevents the application from inheriting broad deployment
+permissions.

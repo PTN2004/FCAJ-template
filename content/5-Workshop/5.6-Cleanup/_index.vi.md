@@ -1,37 +1,50 @@
 ---
-title : "Dọn dẹp tài nguyên"
-date : 2024-01-01
-weight : 6
-chapter : false
-pre : " <b> 5.6. </b> "
+title: "An toàn release và phần việc còn lại"
+date: 2026-07-05
+weight: 6
+chapter: false
+pre: " <b> 5.6. </b> "
 ---
 
-#### Dọn dẹp tài nguyên
+# An toàn release và phần việc còn lại
 
-Xin chúc mừng bạn đã hoàn thành xong lab này!
-Trong lab này, bạn đã học về các mô hình kiến trúc để truy cập Amazon S3 mà không sử dụng Public Internet.
+## Baseline đã hoàn thành
 
-+ Bằng cách tạo Gateway endpoint, bạn đã cho phép giao tiếp trực tiếp giữa các tài nguyên EC2 và Amazon S3, mà không đi qua Internet Gateway.
-Bằng cách tạo Interface endpoint, bạn đã mở rộng kết nối S3 đến các tài nguyên chạy trên trung tâm dữ liệu trên chỗ của bạn thông qua AWS Site-to-Site VPN hoặc Direct Connect.
+- Landing page và caption dashboard công khai qua CloudFront.
+- Backend ECS Fargate sau ALB multi-AZ.
+- Luồng WebSocket Transcribe/Translate song ngữ thật.
+- Heartbeat, reconnect có giới hạn, timeout và abuse guard.
+- Export TXT private, retention 14 ngày và không lưu raw audio.
+- CloudWatch logging với retention 14 ngày.
+- Terraform source cho remote state, target network, WAF, dashboard, budget,
+  wake-on-demand, idle scaling và blue/green cutover.
+- GitHub Actions validation và secret scanning.
 
-#### Dọn dẹp
-1. Điều hướng đến Hosted Zones trên phía trái của bảng điều khiển Route 53. Nhấp vào tên của  s3.us-east-1.amazonaws.com zone. Nhấp vào Delete và xác nhận việc xóa bằng cách nhập từ khóa "delete".
+## Quy trình thay đổi an toàn
 
-![hosted zone](/images/5-Workshop/5.6-Cleanup/delete-zone.png)
+1. Làm việc trên branch và chia frontend/backend/infra thành batch dễ review.
+2. Chạy gate backend, frontend, Terraform và Gitleaks.
+3. Review `git diff` rồi mở pull request.
+4. Chỉ merge sau khi CI của PR và post-merge main đều pass.
+5. Build image bằng immutable SHA tag.
+6. Reconcile Terraform state và review plan trước mọi infrastructure apply.
 
-2. Disassociate Route 53 Resolver Rule - myS3Rule from "VPC Onprem" and Delete it. 
+## Phần target còn lại
 
-![hosted zone](/images/5-Workshop/5.6-Cleanup/vpc.png)
+1. Import/reconcile môi trường AWS hiện hữu vào remote state đã review.
+2. Tạo song song VPC riêng, private task service, ALB và NAT target.
+3. Xác minh ECR pull, health, WebSocket, AI call, S3, log, WAF metric, wake và
+   idle scaling trên target stack.
+4. Chỉ chuyển CloudFront API/WebSocket route sau khi smoke test pass.
+5. Giữ legacy path trong rollback observation window.
+6. Xác nhận ownership trước khi xóa EC2 stopped, EBS, security group cũ, S3
+   bucket cũ hoặc tài nguyên legacy khác.
 
-4.Mở console của CloudFormation và xóa hai stack CloudFormation mà bạn đã tạo cho bài thực hành này:
-+ PLOnpremSetup
-+ PLCloudSetup
+## Ranh giới kiến trúc
 
-![delete stack](/images/5-Workshop/5.6-Cleanup/delete-stack.png)
+Target là self-healing, chưa phải active-active HA. ECS max vẫn là một đến khi
+active-session registry chuyển sang shared store. NAT Gateway thứ hai và service
+hai task chỉ nên xét khi yêu cầu availability đủ để biện minh recurring cost.
 
-5. Xóa các S3 bucket
-
-+ Mở bảng điều khiển S3
-+ Chọn bucket chúng ta đã tạo cho lab, nhấp chuột và xác nhận là empty. Nhấp Delete và xác nhận delete.
-+ 
-![delete s3](/images/5-Workshop/5.6-Cleanup/delete-s3.png)
+Không chạy `terraform destroy` như một bước cleanup workshop. Xóa tài nguyên là
+operation riêng, cần review theo state ownership và bằng chứng chi phí.

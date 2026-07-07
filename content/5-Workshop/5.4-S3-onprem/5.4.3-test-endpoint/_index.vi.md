@@ -1,55 +1,39 @@
 ---
-title : "Kiểm tra Interface Endpoint"
-date : 2024-01-01
-weight : 3
-chapter : false
-pre : " <b> 5.4.3 </b> "
+title: "Dịch và export transcript finalized"
+date: 2026-07-05
+weight: 3
+chapter: false
+pre: " <b> 5.4.3. </b> "
 ---
 
-#### Lấy regional DNS name (tên DNS khu vực) của S3 interface endpoint
-1. Trong Amazon VPC menu, chọn Endpoints.
+# Dịch và export transcript finalized
 
-2. Click tên của endpoint chúng ta mới tạo ở mục 4.2: s3-interface-endpoint. Click details và lưu lại regional DNS name của endpoint (cái đầu tiên) vào text-editor của bạn để dùng ở các bước sau.
+## Luồng dịch
 
-![dns name](/images/5-Workshop/5.4-S3-onprem/dns.png)
+Amazon Translate chỉ được gọi cho finalized text đã chọn từ các Transcribe
+stream. Backend trả caption message chuẩn hóa gồm session context, speaker
+label, timestamp, original text, translated text và final marker. Dashboard chỉ
+append message finalized vào hai cột caption.
 
-#### Kết nối đến EC2 instance ở trong "VPC On-prem" (giả lập môi trường truyền thống)
+## Luồng export TXT
 
-1. Đi đến **Session manager** bằng cách gõ "session manager" vào ô tìm kiếm
+1. Người dùng chọn **Export TXT** sau khi caption đã finalized.
+2. Frontend gửi các finalized row của session đến export API.
+3. FastAPI validate và serialize transcript song ngữ.
+4. Backend ghi object TXT vào transcript S3 bucket private.
+5. Backend trả presigned download URL có thời hạn.
 
-2. Click **Start Session**, chọn EC2 instance có tên **Test-Interface-Endpoint**. EC2 instance này đang chạy trên "VPC On-prem" và sẽ được sử dụng để kiểm tra kết nối đến Amazon S3 thông qua Interface endpoint. Session Manager sẽ mở 1 browser tab mới với shell prompt: **sh-4.2 $**
+Bucket được mã hóa, chặn public access và tự xóa transcript sau 14 ngày.
+Presigned link hết hạn độc lập, mặc định sau 24 giờ.
 
-![Start session](/images/5-Workshop/5.4-S3-onprem/start-session.png)
+## Ranh giới dữ liệu
 
-3. Đi đến ssm-user's home directory với lệnh "cd ~"
+LiveCap không upload hoặc lưu raw microphone audio trong MVP. Audio chỉ tồn tại
+trên luồng browser/WebSocket/Transcribe. S3 chỉ chứa text export đã finalized,
+giúp giảm chi phí storage và giới hạn dữ liệu nhạy cảm được giữ lại.
 
-4. Tạo 1 file tên testfile2.xyz
-```
-fallocate -l 1G testfile2.xyz
-```
+## Xử lý lỗi
 
-![user](/images/5-Workshop/5.4-S3-onprem/cli1.png)
-
-5. Copy file vào S3 bucket mình tạo ở section 4.2
-```
-aws s3 cp --endpoint-url https://bucket.<Regional-DNS-Name> testfile2.xyz s3://<your-bucket-name>
-``` 
-+ Câu lệnh này yêu cầu thông số --endpoint-url, bởi vì bạn cần sử dụng DNS name chỉ định cho endpoint để truy cập vào S3 thông qua Interface endpoint.
-+ Không lấy ' * ' khi copy/paste tên DNS khu vực.
-+ Cung cấp tên S3 bucket của bạn
-
-![copy file](/images/5-Workshop/5.4-S3-onprem/cli2.png)
-
-Bây giờ tệp đã được thêm vào bộ chứa S3 của bạn. Hãy kiểm tra bộ chứa S3 của bạn trong bước tiếp theo.
-
-#### Kiểm tra Object trong S3 bucket
-
-1. Đi đến S3 console
-2. Click Buckets
-3. Click tên bucket của bạn và bạn sẽ thấy testfile2.xyz đã được thêm vào s3 bucket của bạn
-
-![check bucket](/images/5-Workshop/5.4-S3-onprem/check-bucket.png)
-
-
-
-
+Lỗi Translate hoặc export được trả về UI dưới dạng có cấu trúc và ghi log mà
+không lộ credential. Session cleanup vẫn chạy khi Transcribe stream hoặc worker
+lỗi để active-session count không bị leak.

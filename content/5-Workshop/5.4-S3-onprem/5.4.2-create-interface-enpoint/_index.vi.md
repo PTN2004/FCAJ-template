@@ -1,43 +1,48 @@
 ---
-title : "Tạo một S3 Interface endpoint"
-date : 2024-01-01
-weight : 2
-chapter : false
-pre : " <b> 5.4.2 </b> "
+title: "Stream audio và tạo live caption"
+date: 2026-07-05
+weight: 2
+chapter: false
+pre: " <b> 5.4.2. </b> "
 ---
 
-Trong phần này, bạn sẽ tạo và kiểm tra Interface Endpoint  S3 bằng cách sử dụng môi trường truyền thống mô phỏng.
+# Stream audio và tạo live caption
 
-1. Quay lại Amazon VPC menu. Trong thanh điều hướng bên trái, chọn Endpoints, sau đó click Create Endpoint.
+## Pipeline audio và WebSocket
 
-2. Trong Create endpoint console:
-+ Đặt tên interface endpoint
-+ Trong Service category, chọn **aws services** 
+```text
+Microphone
+  -> Web Audio worklet
+  -> PCM mono 16 kHz, 16-bit
+  -> CloudFront WSS /ws/transcribe
+  -> ALB
+  -> FastAPI trên Fargate
+  -> Amazon Transcribe Streaming
+```
 
-![name](/images/5-Workshop/5.4-S3-onprem/s3-interface-endpoint1.png)
+Microphone chỉ bắt đầu khi backend ready và WebSocket đã mở. Chunk sinh ra lúc
+socket unavailable sẽ bị drop, tránh buffer phía client tăng không giới hạn.
 
-3.  Trong Search box, gõ S3 và nhấn Enter. Chọn endpoint có tên com.amazonaws.us-east-1.s3. Đảm bảo rằng cột Type có giá trị Interface.
+## Xử lý song ngữ
 
-![service](/images/5-Workshop/5.4-S3-onprem/s3-interface-endpoint2.png)
+Khi `BILINGUAL_DUAL_STREAM=true`, backend fan-out cùng PCM input vào Transcribe
+stream tiếng Việt và tiếng Anh, chọn kết quả phù hợp rồi dịch finalized segment
+sang ngôn ngữ còn lại. Partial result có thể là state tạm thời, nhưng chỉ
+finalized segment trở thành row cố định.
 
-4. Đối với VPC, chọn VPC Cloud từ drop-down.
-{{% notice warning %}}
-Đảm bảo rằng bạn chọn "VPC Cloud" và không phải "VPC On-prem"
-{{% /notice %}}
-+ Mở rộng **Additional settings** và đảm bảo rằng Enable DNS name *không* được chọn (sẽ sử dụng điều này trong phần tiếp theo của workshop)
+## Khả năng phục hồi kết nối
 
-![vpc](/images/5-Workshop/5.4-S3-onprem/s3-interface-endpoint3.png)
+- Frontend gửi `ping` mỗi 30 giây; backend trả `pong`.
+- Disconnect bất ngờ khi recording được retry tối đa ba lần với backoff 1, 2, 4 giây.
+- Reconnect tạo backend session mới nhưng giữ các finalized row cũ.
+- Nếu retry thất bại, audio capture dừng và người dùng phải restart session.
+- Stop, disconnect, timeout, lỗi Transcribe và exception đều cleanup queue,
+  worker, stream và registry.
 
-5. Chọn 2 subnets trong AZs sau: us-east-1a and us-east-1b
+## Guardrail cho session
 
-![subnets](/images/5-Workshop/5.4-S3-onprem/s3-interface-endpoint4.png)
+UI và backend cùng giới hạn session 30 phút. Backend còn reject khi vượt giới
+hạn global/per-IP trước khi mở managed AI work. Các giới hạn này kiểm soát việc
+dùng Transcribe và Translate ngoài ý muốn trong MVP.
 
-6. Đối với Security group, chọn SGforS3Endpoint:
-
-![sg](/images/5-Workshop/5.4-S3-onprem/s3-interface-endpoint5.png)
-
-7. Giữ default policy - full access và click Create endpoint
-
-![success](/images/5-Workshop/5.4-S3-onprem/s3-interface-endpoint-success.png)
-
-Chúc mừng bạn đã tạo thành công S3 interface endpoint. Ở bước tiếp theo, chúng ta sẽ kiểm tra interface endpoint.
+![Kết quả bước stream và trả finalized caption về dashboard](/images/3-Project/livecap-dashboard.png)

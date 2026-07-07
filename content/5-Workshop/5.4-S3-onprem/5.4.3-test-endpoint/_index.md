@@ -1,59 +1,40 @@
 ---
-title : "Test the Interface Endpoint"
-date : 2024-01-01
-weight : 3
-chapter : false
-pre : " <b> 5.4.3 </b> "
+title: "Translate and Export Finalized Transcripts"
+date: 2026-07-05
+weight: 3
+chapter: false
+pre: " <b> 5.4.3. </b> "
 ---
 
-#### Get the regional DNS name of S3 interface endpoint
-1. From the Amazon VPC menu, choose Endpoints.
+# Translate and Export Finalized Transcripts
 
-2. Click the name of newly created endpoint: s3-interface-endpoint. Click details and save the regional DNS name of the endpoint (the first one) to your text-editor for later use. 
+## Translation Flow
 
-![dns name](/images/5-Workshop/5.4-S3-onprem/dns.png)
+Amazon Translate is called only for finalized text selected from the
+Transcribe streams. The backend returns a normalized caption message containing
+the session context, speaker label, timestamp, original text, translated text,
+and final-state marker. The dashboard appends finalized messages to the two
+caption columns.
 
+## TXT Export Flow
 
-#### Connect to EC2 instance in "VPC On-prem"
+1. The user selects **Export TXT** after captions have been finalized.
+2. The frontend sends the finalized session rows to the export API.
+3. FastAPI validates and serializes the bilingual transcript.
+4. The backend writes a TXT object to the private transcript S3 bucket.
+5. S3 returns a time-limited presigned download URL through the backend.
 
-1. Navigate to **Session manager** by typing "session manager" in the search box 
+The bucket is encrypted, blocks public access, and removes transcript objects
+after 14 days. Presigned links expire independently (24 hours by default).
 
-2. Click **Start Session**, and select the EC2 instance named **Test-Interface-Endpoint**. This EC2 instance is running in "VPC On-prem" and will be used to test connectivty to Amazon S3 through the Interface endpoint we just created. Session Manager will open a new browser tab with a shell prompt: **sh-4.2 $**
+## Data Boundary
 
-![Start session](/images/5-Workshop/5.4-S3-onprem/start-session.png)
+LiveCap does not upload or store raw microphone audio in the MVP. Audio exists
+only in the browser/WebSocket/Transcribe streaming path. S3 contains finalized
+text exports, which reduces storage cost and limits retained sensitive data.
 
-3. Change to the ssm-user's home directory with command "cd ~"
+## Failure Handling
 
-4. Create a file named testfile2.xyz
-```
-fallocate -l 1G testfile2.xyz
-```
-
-![user](/images/5-Workshop/5.4-S3-onprem/cli1.png)
-
-
-5. Copy file to the same S3 bucket we created in section 3.2
-
-```
-aws s3 cp --endpoint-url https://bucket.<Regional-DNS-Name> testfile2.xyz s3://<your-bucket-name>
-``` 
-+ This command requires the --endpoint-url parameter, because you need to use the endpoint-specific DNS name to access S3 using an Interface endpoint.
-+ Do not include the leading ' * ' when copying/pasting the regional DNS name.
-+ Provide your S3 bucket name created earlier
-
-![copy file](/images/5-Workshop/5.4-S3-onprem/cli2.png)
-
-
-Now the file has been added to your S3 bucket. Let check your S3 bucket in the next step.
-
-#### Check Object in S3 bucket
-
-1. Navigate to S3 console
-2. Click Buckets
-3. Click the name of your bucket and you will see testfile2.xyz has been added to your bucket
-
-![check bucket](/images/5-Workshop/5.4-S3-onprem/check-bucket.png)
-
-
-
-
+Translate or export failures return structured errors to the UI and are logged
+without exposing credentials. A session cleanup still runs when a Transcribe
+stream or internal worker fails, preventing leaked active-session counts.
