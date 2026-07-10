@@ -1,50 +1,120 @@
 ---
-title: "Stream Audio and Produce Live Captions"
-date: 2026-07-05
+title: "Live Captioning – Transcribe & Translate in Action"
+date: 2026-07-08
 weight: 2
 chapter: false
 pre: " <b> 5.4.2. </b> "
 ---
 
-# Stream Audio and Produce Live Captions
+# Live Captioning – Transcribe & Translate in Action
 
-## Audio and WebSocket Pipeline
+## How the Real-Time Pipeline Works
 
-```text
-Microphone
-  -> Web Audio worklet
-  -> 16 kHz, 16-bit, mono PCM chunks
-  -> CloudFront WSS /ws/transcribe
-  -> ALB
-  -> FastAPI on Fargate
-  -> Amazon Transcribe Streaming
+When a user clicks **Start**, the following chain of events happens automatically:
+
+```
+Browser microphone
+  → Web Audio API worklet (16 kHz resampling)
+  → Binary PCM chunks sent over WebSocket (WSS)
+  → CloudFront /ws/transcribe
+  → Application Load Balancer
+  → FastAPI on ECS Fargate (port 8000)
+  → Amazon Transcribe Streaming (two parallel streams: vi-VN and en-US)
+  → Amazon Translate (finalized segments only)
+  → Caption rows returned over the same WebSocket path
+  → Browser caption dashboard
 ```
 
-The microphone starts only after the backend is ready and the WebSocket is
-open. Chunks produced while the socket is unavailable are dropped, preventing
-unbounded client buffering.
+The microphone only starts capturing audio **after** the backend health check
+passes and the WebSocket connection is established. Audio produced while the
+socket is not open is dropped rather than buffered.
 
-## Bilingual Processing
+## Bilingual Dual-Stream Mode
 
-With `BILINGUAL_DUAL_STREAM=true`, the backend fans the same PCM input into
-Vietnamese and English Transcribe streams, arbitrates results, and translates
-the selected finalized segment into the other language. Partial results may be
-shown as transient state, but only finalized segments become permanent rows.
+With `BILINGUAL_DUAL_STREAM=true`, the backend fans each PCM chunk into two
+parallel Amazon Transcribe streams:
+
+1. **`vi-VN`** – detects Vietnamese speech
+2. **`en-US`** – detects English speech
+
+An arbitrator picks the language that produced the finalized segment first, then
+sends that text to Amazon Translate to produce the other language. The result is
+a bilingual row:
+
+```
+[Vietnamese original]  |  [English translation]
+[English original]     |  [Vietnamese translation]
+```
+
+Only **finalized** segments become permanent caption rows. Partial (interim)
+results may appear in the UI transiently but are never stored.
 
 ## Connection Resilience
 
-- The frontend sends `ping` every 30 seconds; the backend returns `pong`.
-- An unexpected recording-time disconnect retries at most three times with
-  1, 2, and 4 second backoff.
-- A reconnect creates a new backend session while preserving finalized rows.
-- If retries fail, audio capture stops and the user must restart the session.
-- Stop, disconnect, timeout, Transcribe error, and internal exceptions all run
-  queue, worker, stream, and registry cleanup.
+| Event | Behaviour |
+|---|---|
+| Normal operation | Frontend sends `ping` every 30 seconds; backend replies `pong` |
+| Unexpected disconnect | Frontend retries up to 3 times: 1 s, 2 s, 4 s backoff |
+| Reconnect success | New backend session starts; finalized rows are preserved in UI |
+| All retries fail | Audio capture stops; user must press Start again |
+| 30-minute timeout | Backend closes session; frontend shows "Session ended" |
 
 ## Session Guardrails
 
-The UI and backend share a 30-minute maximum duration. The backend also rejects
-excess global/per-IP sessions before starting managed AI service work. These
-limits bound accidental Transcribe and Translate usage for the MVP.
+The backend rejects new connections when limits are exceeded:
 
-![Step result: finalized captions returned to the live dashboard](/images/3-Project/livecap-dashboard.png)
+- **4 concurrent sessions** globally (one ECS task, process memory)
+- **1 session per client IP**
+
+These limits prevent accidental runaway Transcribe/Translate costs for the MVP.
+Before scaling beyond one task, the session registry must move to DynamoDB or
+Redis (shared state across tasks).
+
+## Start a Live Session
+
+1. Open `https://dpeohr327wt9l.cloudfront.net`
+2. Click **Start captioning** to go to `/app`
+3. Click **Start session** – the frontend wakes the backend if needed, then polls health
+4. Allow microphone access when prompted by the browser
+5. Speak in English or Vietnamese
+6. Watch finalized bilingual caption rows appear in the dashboard
+
+The dashboard in its **READY** state before starting a session:
+
+![LiveCap dashboard in ready state showing Start session button and audio source selector](/images/5-Workshop/livecap-production-dashboard-ready.png)
+
+After clicking **Start session**, the status changes to **WAKING** while the frontend wakes
+the ECS backend (scales 0 → 1) and syncs the transcription streams:
+
+![LiveCap dashboard in WAKING state showing Connecting button and SYNCING_NODE_STREAMS status](/images/5-Workshop/livecap-dashboard-waking.png)
+
+Once connected, the bilingual caption layout appears with **VIETNAMESE** and **ENGLISH**
+columns side by side. Finalized segments appear as caption rows in real time:
+
+![LiveCap caption dashboard showing bilingual caption columns after session starts](/images/5-Workshop/livecap-dashboard.png)
+
+The dashboard provides **Start session**, **Stop session**, **Download transcript**, and
+**PURGE SESSION CACHE** controls; a 30-minute session timer with elapsed time; audio source
+selection; real-time connection state badge (READY / WAKING / LIVE / LOST); side-by-side
+Vietnamese and English transcription; and reconnect/error states across desktop and mobile
+layouts. Only finalized segments are retained and made available for export.
+
+## Connection Error States
+
+If the WebSocket connection is lost (e.g., backend timed out due to silence or network
+issue), the dashboard shows a **LOST** badge and error toasts:
+
+- **SYSTEM ERROR** – red toast with the specific error message (e.g., "Your request timed
+  out because no new audio was received for 15 seconds.")
+- **STREAM DISRUPTED** – yellow warning toast asking user to verify internet and restart
+
+![LiveCap dashboard showing LOST status with System Error and Stream Disrupted error toasts](/images/5-Workshop/livecap-dashboard-error-state.png)
+
+Click **DISMISS** on the system error, then **Start session** again to reconnect.
+
+## What If Microphone Access Is Denied?
+
+If the browser blocks microphone access, LiveCap stops before opening any
+stream and displays a **HARDWARE ACCESS ERROR** message in the main panel instead
+of leaving a broken session open. Allow microphone access in the browser site
+settings and reload `/app`.

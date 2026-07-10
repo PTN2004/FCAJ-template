@@ -1,22 +1,27 @@
 ---
-title: "Frontend Delivery and Real-Time Integrations"
-date: 2026-07-05
+title: "Frontend Delivery & Real-Time Integrations"
+date: 2026-07-08
 weight: 4
 chapter: false
 pre: " <b> 5.4. </b> "
 ---
 
-# Frontend Delivery and Real-Time Integrations
+# Frontend Delivery & Real-Time Integrations
 
-The LiveCap frontend is a React 18, TypeScript, Vite, Tailwind CSS, and GSAP
-application. `/` is a product landing page with scroll-driven presentation;
-`/app` is the lightweight caption dashboard used during live sessions.
+This section covers deploying the React frontend to S3 and CloudFront, then
+connecting it to the backend for live bilingual captioning.
 
-CloudFront is the single browser entrypoint. It serves static assets from a
-private S3 bucket through OAC and routes `/api/*` and `/ws/*` to the ALB. The
-backend then coordinates Transcribe, Translate, transcript export, and session
-cleanup.
+## What You Will Set Up
 
-Heavy animation is limited to the landing page. The live dashboard prioritizes
-stable transcript rendering, microphone controls, connection status, and the
-session timer.
+| Component | Technology | Where |
+|---|---|---|
+| Static site | React 18 + Vite + TypeScript | Private S3 bucket |
+| CDN delivery | Amazon CloudFront with OAC | Global edge |
+| WebSocket | Browser ↔ FastAPI | Through CloudFront → ALB → Fargate |
+| Audio processing | Web Audio API worklet | In the browser |
+| AI services | Transcribe Streaming + Translate | Called by the Fargate backend |
+| Transcript export | S3 presigned URL | Private transcript bucket |
+
+The current live S3 buckets:
+
+![S3 bucket list showing frontend and transcript buckets](/images/5-Workshop/5.4-S3-onprem/s3_buckets_list.png)

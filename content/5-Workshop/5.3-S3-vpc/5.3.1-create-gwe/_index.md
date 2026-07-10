@@ -1,95 +1,137 @@
----
-title: "Build and Publish the Backend Container"
-date: 2026-07-05
+﻿---
+title: "Build & Push Container Image to ECR"
+date: 2026-07-08
 weight: 1
 chapter: false
 pre: " <b> 5.3.1. </b> "
 ---
 
-# Build and Publish the Backend Container
+# Build & Push Container Image to ECR
 
-## Step 1: Verify the Backend
+## Step 1 – Run Backend Tests Locally
 
-The FastAPI application exposes `/api/health`, REST export routes, and
-`/ws/transcribe`. Before building an image, run:
+Before building anything, verify the backend compiles and all tests pass:
 
 ```powershell
 cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements-dev.txt
+
+# Verify Python syntax
 python -m compileall app
+
+# Run all 204 tests
 python -m pytest
 ```
 
-The verified submission baseline contains 204 passing backend tests.
+Expected result: **204 tests pass**, no compilation errors.
 
-## Step 2: Build for Fargate
+## Step 2 – Configure the Local .env
 
-The repository Dockerfile installs pinned Python dependencies, copies the
-application, exposes port 8000, and includes a container health check. Build
-for the ECS runtime architecture and smoke-test `/api/health` locally.
+Copy the example file and edit it for your environment:
 
 ```powershell
+Copy-Item .env.example .env
+```
+
+Key variables to set:
+
+| Variable | Value | Notes |
+|---|---|---|
+| `AWS_REGION` | `ap-southeast-1` | Region for all AWS calls |
+| `S3_BUCKET` | `livecap-transcripts-dev-720459752315` | Your transcript bucket name |
+| `ALLOWED_ORIGIN` | `http://localhost:5173` | Local frontend URL |
+| `BILINGUAL_DUAL_STREAM` | `true` | Enable both Vietnamese and English |
+
+**Never** put AWS access keys in this file. The backend uses the IAM profile
+set in your environment.
+
+## Step 3 – Verify Backend Runs Locally
+
+```powershell
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+In another terminal:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/api/health
+```
+
+Expected response:
+
+```json
+{"status": "healthy", "version": "1.0.0"}
+```
+
+## Step 4 – Build the Docker Image for Fargate
+
+ECS Fargate runs on Linux `amd64`. Use Docker Buildx to build the right
+platform regardless of your machine's architecture:
+
+```powershell
+# Tag the image with the current Git commit SHA (immutable)
 $imageTag = "$(git rev-parse --short HEAD)-amd64"
+
 docker buildx build --platform linux/amd64 --provenance=false `
   -t "livecap-backend:$imageTag" --load .
+```
+
+Smoke-test the image locally before pushing:
+
+```powershell
 docker run --rm -d --name livecap-smoke -p 8000:8000 `
   --env-file .env "livecap-backend:$imageTag"
+
+Start-Sleep 3
 Invoke-RestMethod http://127.0.0.1:8000/api/health
+
 docker stop livecap-smoke
 ```
 
-Do not bake `.env` or AWS credentials into the image. Local execution uses an
-AWS profile; ECS injects settings and uses IAM roles at runtime.
+## Step 5 – Authenticate Docker to ECR and Push
 
-## Step 3: Push an Immutable Image
-
-ECR stores the backend image. The deployment tag is derived from the Git commit
-instead of `latest`, so a task definition points to a reproducible artifact.
-The verified public demo uses image tag `1ef4250-amd64`.
-
-```text
-source commit -> Docker image -> immutable ECR tag -> ECS task definition
-```
-
-Authenticate Docker and push the same immutable tag. Replace the repository
-name only when the target environment uses another ECR repository.
+ECR uses short-lived tokens for Docker authentication. Retrieve a fresh token
+and push the image:
 
 ```powershell
-$region = "ap-southeast-1"
-$accountId = aws sts get-caller-identity --query Account --output text
-$registry = "$accountId.dkr.ecr.$region.amazonaws.com"
+$region    = "ap-southeast-1"
+$accountId = aws sts get-caller-identity --query Account --output text `
+               --profile livecap-camgiacntn
+$registry  = "$accountId.dkr.ecr.$region.amazonaws.com"
 $repository = "$registry/livecap-backend"
-aws ecr get-login-password --region $region |
+
+# Login
+aws ecr get-login-password --region $region --profile livecap-camgiacntn |
   docker login --username AWS --password-stdin $registry
+
+# Tag and push
 docker tag "livecap-backend:$imageTag" "$repository:$imageTag"
 docker push "$repository:$imageTag"
 ```
 
-## Step 4: Create a Task Definition Revision
+After the push, the image appears in ECR with an immutable tag derived from
+the Git commit SHA:
 
-Update the task definition image URI to the pushed SHA tag, keep container port
-8000, inject environment values, and attach the execution/task roles. Register
-a new revision rather than mutating an old artifact. Then update the ECS service
-to that reviewed revision and wait for stability.
+![ECR repository list showing livecap-backend repository](/images/5-Workshop/5.3-S3-vpc/ecr_repositories.png)
 
-```powershell
-aws ecs update-service --region ap-southeast-1 `
-  --cluster <cluster-name> --service <service-name> `
-  --task-definition <task-definition-family:revision>
-aws ecs wait services-stable --region ap-southeast-1 `
-  --cluster <cluster-name> --services <service-name>
-```
+![ECR image list showing immutable image tags (Git SHA format)](/images/5-Workshop/5.3-S3-vpc/ecr_images_list.png)
 
-Do not use these placeholders blindly in production. Confirm the account,
-cluster, service, task-definition diff, and rollback revision first.
+## Step 6 – IAM Role Separation
 
-## IAM Separation
+LiveCap uses two separate IAM roles for the ECS task:
 
-- **Task execution role:** pull from ECR and write container logs.
-- **Task role:** call Transcribe, Translate, transcript S3, CloudWatch, and the
-  optional least-privilege ECS scale-down action.
-- **Wake Lambda role:** only describe/update the selected ECS service in the
-  reviewed target.
+**Task Execution Role** (`livecap-execution-role`)
+- Pull images from ECR
+- Write container logs to CloudWatch
 
-This separation prevents the application from inheriting broad deployment
-permissions.
+**Task Role** (`livecap-task-role`)
+- Call Amazon Transcribe Streaming
+- Call Amazon Translate
+- Write/read from the private transcript S3 bucket
+- Write metrics to CloudWatch
+- Optionally: call `ecs:UpdateService` for idle scale-down
+
+This separation ensures the running application never gets deployment
+permissions it does not need.

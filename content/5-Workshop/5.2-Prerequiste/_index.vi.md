@@ -1,6 +1,6 @@
 ---
 title: "Điều kiện tiên quyết"
-date: 2026-07-05
+date: 2026-07-08
 weight: 2
 chapter: false
 pre: " <b> 5.2. </b> "
@@ -8,64 +8,125 @@ pre: " <b> 5.2. </b> "
 
 # Điều kiện tiên quyết
 
-## Bộ công cụ local
+Trước khi bắt đầu thực hành workshop này, hãy đảm bảo bạn đã chuẩn bị đầy đủ
+các mục dưới đây. Bỏ qua bất kỳ mục nào đều có thể khiến quá trình triển khai
+hoặc kiểm thử bị lỗi giữa chừng.
 
-| Công cụ | Phiên bản tham chiếu | Mục đích |
-| --- | --- | --- |
-| Python | 3.11+ | Backend FastAPI và test |
-| Node.js | 20 | Build React/Vite và chạy Vitest |
-| Docker | Bản stable hiện tại | Build và smoke test backend image |
-| AWS CLI | v2 | Đọc/vận hành đúng AWS account và region |
-| Terraform | 1.10.5 | Format và validate hạ tầng |
-| Git và Gitleaks | Bản stable hiện tại | Quản lý source và quét secret |
+## AWS Account và quyền IAM
 
-Các tài nguyên regional của LiveCap dùng `ap-southeast-1`. CloudFront là dịch
-vụ global; WAF scope CloudFront chỉ được Terraform quản lý qua `us-east-1` vì
-đây là yêu cầu của AWS đối với global Web ACL.
+Bạn cần một AWS account và một IAM identity có các quyền phù hợp. **Không dùng
+root account** cho bất kỳ bước triển khai nào.
 
-## Mô hình truy cập AWS
+Tạo một IAM user riêng (ví dụ `camgiacntn` đang được dùng trong project này) và
+đính kèm policy tùy chỉnh cấp đúng các action cần thiết:
 
-Môi trường local dùng AWS profile. Fargate task dùng ECS task role; credential
-không được chép vào `.env`, Docker image hoặc Git. Quyền runtime chỉ cấp cho
-Transcribe, Translate, transcript S3, CloudWatch và action ECS idle-scaling tùy chọn.
+| Nhóm quyền | Action cần thiết |
+|---|---|
+| ECR | `ecr:GetAuthorizationToken`, `ecr:BatchCheckLayerAvailability`, `ecr:PutImage`, `ecr:InitiateLayerUpload`, `ecr:UploadLayerPart`, `ecr:CompleteLayerUpload`, `ecr:DescribeRepositories`, `ecr:ListImages` |
+| ECS | `ecs:RegisterTaskDefinition`, `ecs:UpdateService`, `ecs:DescribeServices`, `ecs:DescribeClusters`, `ecs:ListTasks`, `ecs:DescribeTasks` |
+| S3 | `s3:ListBucket`, `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject`, `s3:GetBucketLocation` |
+| CloudFront | `cloudfront:CreateInvalidation`, `cloudfront:ListDistributions`, `cloudfront:GetDistribution` |
+| VPC & Mạng | `ec2:Describe*`, `ec2:CreateVpc`, `ec2:CreateSubnet`, `ec2:CreateInternetGateway`, `ec2:CreateNatGateway`, `ec2:CreateRouteTable`, `ec2:CreateSecurityGroup` và các action paired `Delete*`/`Attach*`/`Detach*` tương ứng |
+| ELB | `elasticloadbalancing:*` (cần cho ALB, listener, target group) |
+| Lambda | `lambda:CreateFunction`, `lambda:UpdateFunctionCode`, `lambda:UpdateFunctionConfiguration`, `lambda:AddPermission`, `lambda:GetFunction`, `lambda:DeleteFunction` |
+| WAF | `wafv2:CreateWebACL`, `wafv2:AssociateWebACL`, `wafv2:GetWebACL`, `wafv2:UpdateWebACL`, `wafv2:DeleteWebACL` |
+| CloudWatch Logs | `logs:CreateLogGroup`, `logs:PutRetentionPolicy`, `logs:DescribeLogGroups`, `logs:DeleteLogGroup` |
+| Budgets | `budgets:ModifyBudget`, `budgets:ViewBudget` |
+| STS | `sts:GetCallerIdentity` |
+| IAM | `iam:PassRole` (bắt buộc cho Terraform để gán role cho ECS/Lambda), các action read-only để xác minh role |
 
-## Cấu hình backend
+Triển khai thực tế dùng IAM user `camgiacntn` (account `720459752315`). ECS Fargate
+task dùng **task role** để có thể gọi Transcribe, Translate và S3 lúc runtime mà
+không cần nhúng credential vào container image.
 
-Copy `backend/.env.example` thành file `.env` local đã được ignore:
+![Danh sách IAM users](/images/5-Workshop/5.2-Prerequisite/iam_users.png)
 
-| Biến | Giá trị tham chiếu | Trách nhiệm |
-| --- | --- | --- |
-| `AWS_REGION` | `ap-southeast-1` | Region cho Transcribe, Translate và S3 |
-| `S3_BUCKET` | theo môi trường | Bucket private để export transcript |
-| `SESSION_TIMEOUT` | `1800` | Thời lượng session tối đa theo giây |
-| `MAX_CONCURRENT_SESSIONS` | `4` | Giới hạn session active toàn process |
-| `MAX_SESSIONS_PER_IP` | `1` | Giới hạn session active trên mỗi IP |
-| `BILINGUAL_DUAL_STREAM` | `true` | Chạy stream tiếng Việt và Anh song song |
-| `ALLOWED_ORIGIN` | frontend origin | CORS allowlist |
-| `CLOUDWATCH_LOG_GROUP` | `livecap` | Đích structured logging |
+![IAM roles lọc theo livecap – hiển thị task role và execution role](/images/5-Workshop/5.2-Prerequisite/iam_livecap_roles.png)
 
-Idle scaling mặc định an toàn với `ENABLE_IDLE_SCALE_DOWN=false`.
-`ECS_CLUSTER_NAME` và `ECS_SERVICE_NAME` có thể để trống khi chạy local. Biến
-`MAX_SPEAKERS` cũ đã bị loại khỏi cấu hình active.
+## Bộ công cụ cần cài đặt
 
-## Cấu hình frontend
+Cài đặt các công cụ sau trước khi bắt đầu. Phiên bản chính xác rất quan trọng
+với Terraform và Python.
 
-| Biến | Giá trị local | Trách nhiệm |
-| --- | --- | --- |
-| `VITE_API_BASE_URL` | `http://127.0.0.1:8000` | REST API base URL |
-| `VITE_WS_URL` | `ws://127.0.0.1:8000/ws/transcribe` | WebSocket endpoint |
-| `VITE_WAKE_BACKEND_URL` | để trống | Wake path tùy chọn của target |
-| `VITE_BACKEND_HEALTH_URL` | local `/api/health` | Poll trạng thái backend |
-| `VITE_BACKEND_WAKE_TIMEOUT_SECONDS` | `120` | Thời gian chờ startup tối đa |
-| `VITE_MAX_SESSION_SECONDS` | `1800` | Countdown session trên UI |
+| Công cụ | Phiên bản cần dùng | Lý do |
+|---|---|---|
+| **Python** | 3.11+ | Backend FastAPI và 204 unit test |
+| **Node.js** | 20 LTS | Build React/Vite và 11 frontend test |
+| **Docker** (có `buildx`) | Stable hiện tại | Build image `linux/amd64` cho Fargate |
+| **AWS CLI** | v2 | Xác thực ECR, đồng bộ S3, tạo CloudFront invalidation |
+| **Terraform** | 1.10.5 | Format và validate hạ tầng; apply cần review thủ công |
+| **Git** | Bất kỳ bản gần đây | Clone repo và tạo immutable image tag từ commit SHA |
+| **Gitleaks** | Stable hiện tại | Quét secret trước mỗi lần `git push` |
 
-Microphone chỉ bắt đầu sau khi backend ready. Audio sinh ra lúc socket chưa mở
-sẽ bị drop thay vì buffer không giới hạn.
+Cấu hình AWS profile cho region `ap-southeast-1`:
 
-## Điều kiện an toàn
+```powershell
+aws configure --profile livecap-camgiacntn
+# AWS Access Key ID:     <key của bạn>
+# AWS Secret Access Key: <secret của bạn>
+# Default region:        ap-southeast-1
+# Default output format: json
+```
 
-- Không commit `.env`, `terraform.tfvars`, backend config, state hoặc plan thật.
-- Chạy Gitleaks trước khi publish thay đổi.
-- CI dùng `terraform init -backend=false` và không tự apply hạ tầng.
-- Import/reconcile tài nguyên AWS hiện hữu và review plan trước mọi apply.
-- Chỉ xử lý audio khi người vận hành có quyền sử dụng nội dung đó.
+Xác minh kết nối:
+
+```powershell
+aws sts get-caller-identity --profile livecap-camgiacntn
+```
+
+Kết quả mong đợi:
+
+```json
+{
+  "UserId": "AIDA...",
+  "Account": "720459752315",
+  "Arn": "arn:aws:iam::720459752315:user/camgiacntn"
+}
+```
+
+## Kiến thức nền cần có
+
+Workshop sẽ diễn ra nhanh hơn nếu bạn đã biết sơ những mục sau:
+
+- **Docker** cơ bản: build, tag, push image.
+- **AWS ECS/Fargate**: cluster, service, task definition, task role là gì.
+- **WebSocket** cơ bản: trình duyệt upgrade HTTP lên kết nối hai chiều như thế nào.
+- **S3** cơ bản: bucket, object, policy, presigned URL.
+- **CloudFront** cơ bản: distribution, origin, behavior, OAC.
+- **Terraform** cơ bản: `init`, `plan`, `apply`, provider — đủ để đọc file `.tf`
+  mà không bị lạc.
+- **Python** cơ bản: đủ để đọc handler FastAPI và pytest test.
+
+Bạn **không cần** phải là chuyên gia ở bất kỳ mảng nào. Workshop sẽ giải thích
+chi tiết từng bước.
+
+## Ước tính chi phí
+
+Chạy LiveCap trên AWS trong một phiên workshop ngắn tốn rất ít tiền, nhưng một
+số tài nguyên có chi phí cố định trong khi đang được cấp phát.
+
+| Tài nguyên | Chi phí ước tính |
+|---|---|
+| ECS Fargate (0.25 vCPU, 0.5 GB, `ap-southeast-1`) | ~$0.011/giờ |
+| Application Load Balancer | ~$0.022/giờ + LCU |
+| NAT Gateway | ~$0.059/giờ + data |
+| CloudFront | 1 TB đầu miễn phí; $0.12/GB sau đó |
+| S3 | Không đáng kể khi dùng workshop |
+| Amazon Transcribe Streaming | $0.024/phút âm thanh |
+| Amazon Translate | $15/triệu ký tự (2M đầu miễn phí/tháng) |
+| AWS WAF | ~$5/Web ACL/tháng + $1/rule/tháng |
+
+> **Mẹo:** Thực hiện phần Clean-up cuối workshop để xóa tất cả tài nguyên và
+> tránh phát sinh chi phí liên tục. NAT Gateway và ALB là hai khoản chi phí
+> cố định lớn nhất.
+
+## Checklist an toàn trước khi bắt đầu
+
+- [ ] Không dùng root account.
+- [ ] IAM credential nằm trong `~/.aws/credentials`, không nằm trong bất kỳ
+      file `.env` nào.
+- [ ] File `.env`, `terraform.tfvars`, `backend.hcl` và `*.tfstate` thật đã được
+      gitignore và sẽ không bị commit.
+- [ ] Đã cài Gitleaks và sẽ chạy trước mỗi lần `git push`.
+- [ ] Bạn hiểu rằng `terraform destroy` là **bước riêng, cần review** và không
+      được chạy tự động.

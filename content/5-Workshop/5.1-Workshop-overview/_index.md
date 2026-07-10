@@ -1,6 +1,6 @@
 ---
 title: "Workshop Overview"
-date: 2026-07-05
+date: 2026-07-08
 weight: 1
 chapter: false
 pre: " <b> 5.1. </b> "
@@ -8,63 +8,82 @@ pre: " <b> 5.1. </b> "
 
 # Workshop Overview
 
-## Problem and Goals
+## What Problem Does LiveCap Solve?
 
-Language barriers and fast-paced speech make bilingual meetings difficult to
-follow. LiveCap provides near-real-time captions without requiring a meeting
-platform integration or storing microphone recordings.
+In multilingual meetings, participants often struggle to follow conversations
+happening in a language they are not fluent in. Traditional solutions either
+require a human interpreter (expensive and slow) or depend on meeting-platform
+plugins that store audio recordings on third-party servers.
 
-The implemented MVP can:
+**LiveCap** is a browser-based, real-time bilingual caption application that:
 
-- capture browser microphone audio as 16 kHz, 16-bit, mono PCM;
-- stream audio through a secure WebSocket;
-- transcribe Vietnamese and English with parallel Transcribe streams;
-- translate only finalized segments and append only finalized caption rows;
-- preserve finalized rows across bounded reconnects;
-- enforce a 30-minute session limit and process-local abuse limits; and
-- export finalized bilingual transcripts as TXT through a presigned S3 URL.
+- Captures microphone audio **inside the browser** – no plugin or app install needed.
+- Streams compressed PCM audio over a **secure WebSocket** directly to a backend.
+- Produces **Vietnamese ↔ English** bilingual captions in near real time using
+  Amazon Transcribe and Amazon Translate.
+- Stores **only finalized TXT transcripts** in a private S3 bucket; raw audio is
+  never recorded.
+
+## Who Is This For?
+
+| Audience | Use Case |
+|---|---|
+| Meeting participants | Follow bilingual conversations without a human interpreter |
+| Teams with AWS accounts | Deploy a working AI-powered SaaS prototype end-to-end |
+| Cloud practitioners | Learn ECS Fargate, WebSocket streaming, and AWS AI services together |
+
+## Use-Case Category
+
+LiveCap falls into two overlapping categories:
+
+- **AI/ML Application** – uses Amazon Transcribe Streaming and Amazon Translate
+  as the core intelligence layer.
+- **Web Application** – delivers a React frontend through CloudFront + S3 and
+  a FastAPI backend through ECS Fargate behind an ALB.
+
+## AWS Services Used
+
+| Service | Role in LiveCap |
+|---|---|
+| **Amazon CloudFront** | Public HTTPS/WSS entry point; routes static assets and API/WebSocket traffic |
+| **Amazon S3** | Private frontend hosting (OAC) and private TXT transcript storage |
+| **Application Load Balancer** | Health checks and HTTP/WebSocket forwarding to the Fargate container |
+| **Amazon ECS Fargate** | Serverless container runtime for the FastAPI backend |
+| **Amazon ECR** | Immutable container image registry (Git SHA tags) |
+| **Amazon Transcribe Streaming** | Converts 16 kHz PCM audio chunks to partial/final text |
+| **Amazon Translate** | Translates finalized segments between Vietnamese and English |
+| **AWS WAF** | Blocks managed threats and rate abuse at both CloudFront and ALB |
+| **AWS Lambda** | Wake-on-demand: scales ECS from 0 → 1 before the first session |
+| **Amazon CloudWatch** | Receives structured application logs and AWS service metrics |
+| **AWS IAM** | Least-privilege roles for the ECS task, Lambda, and ECR execution |
 
 ## Verified As-Deployed Architecture
 
-![alt](/images/workshop/architech.png)
+The diagram below shows the exact AWS resources that are live as of the workshop
+submission date. The reviewed Terraform target (private subnets, NAT Gateway,
+scale-to-zero, WAF, dashboard, budget) has since been deployed via a blue/green
+cutover.
 
-The live backend runs in `ap-southeast-1`. The ALB spans public subnets in
-`ap-southeast-1a` and `ap-southeast-1b`. The ECS service maintains one Fargate
-task with a public IP in the existing VPC. ECS can replace a failed task, but
-there is no active-active backend; an in-flight WebSocket session is lost when
-the task is replaced.
+![LiveCap as-deployed architecture diagram](/images/5-Workshop/livecap-target-architecture.png)
 
-## Services and Responsibilities
+The LiveCap landing page (served from CloudFront via private S3 with OAC):
 
-| Service | Responsibility in LiveCap |
-| --- | --- |
-| CloudFront | Public HTTPS/WSS entrypoint and path routing |
-| Amazon S3 | Private frontend origin and private TXT transcript storage |
-| ALB | Health checks and forwarding API/WebSocket traffic to port 8000 |
-| ECS Fargate | Runs the containerized FastAPI backend |
-| Amazon ECR | Stores backend images under immutable SHA-derived tags |
-| Amazon Transcribe | Converts streaming PCM audio to partial/final text |
-| Amazon Translate | Translates finalized text between English and Vietnamese |
-| CloudWatch | Receives application logs and AWS service metrics |
-| GitHub Actions | Runs validation-only CI without deploying |
+![LiveCap landing page showing hero section with bilingual caption preview card](/images/5-Workshop/livecap-landing.png)
 
 ## Main Runtime Flow
 
-1. CloudFront serves the React/Vite frontend from private S3 through OAC.
-2. The user starts capture and grants microphone permission.
-3. The frontend opens `/ws/transcribe` through CloudFront and the ALB.
-4. FastAPI checks global and per-IP session limits before starting AWS streams.
-5. PCM chunks are sent only while the socket is open.
-6. Transcribe returns partial and finalized text; only finalized segments are
-   translated and appended to the transcript.
-7. Bilingual captions return over Fargate -> ALB -> CloudFront -> browser.
-8. Export writes a TXT object to private S3 and returns a temporary URL.
-
-## Current Versus Target
-
-The repository also contains a reviewed Terraform target with a dedicated
-two-AZ VPC, private tasks, one NAT Gateway, WAF in COUNT mode, a wake Lambda,
-ECS `0 <-> 1` scaling, a CloudWatch dashboard, and an AWS Budget. Those changes
-still require state reconciliation, plan review, and blue/green cutover.
-
-![Reviewed target architecture used for the implementation plan](/images/workshop/target.png)
+1. **CloudFront** serves the React/Vite frontend from a **private S3 bucket** using
+   Origin Access Control (OAC) — the bucket has no public access.
+2. User clicks **Start**; the frontend calls `/api/wake` through CloudFront, which
+   routes to a **Lambda function** that scales ECS from 0 → 1 if needed.
+3. The frontend polls `/api/health`, requests microphone permission, then opens
+   `/ws/transcribe` over WSS through CloudFront → ALB → Fargate.
+4. **FastAPI** checks global/per-IP session limits before starting AWS streams.
+5. 16 kHz PCM chunks are forwarded to **Amazon Transcribe Streaming** (two parallel
+   streams: Vietnamese and English).
+6. Only **finalized** segments are sent to **Amazon Translate** and appended as
+   bilingual caption rows; partial results are shown transiently and discarded.
+7. Captions travel back: Fargate → ALB → CloudFront → browser.
+8. **Export**: the frontend posts finalized rows to `/api/sessions/{id}/export`,
+   which writes a TXT object to the private transcript bucket and returns a
+   time-limited presigned URL.

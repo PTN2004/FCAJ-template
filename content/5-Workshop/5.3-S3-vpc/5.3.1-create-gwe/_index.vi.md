@@ -1,92 +1,137 @@
----
-title: "Build và publish backend container"
-date: 2026-07-05
+﻿---
+title: "Build & Push Container Image lên ECR"
+date: 2026-07-08
 weight: 1
 chapter: false
 pre: " <b> 5.3.1. </b> "
 ---
 
-# Build và publish backend container
+# Build & Push Container Image lên ECR
 
-## Bước 1: Kiểm tra backend
+## Bước 1 – Chạy test backend ở local
 
-FastAPI cung cấp `/api/health`, REST route export và `/ws/transcribe`. Trước khi
-build image, chạy:
+Trước khi build bất cứ thứ gì, hãy xác minh backend biên dịch được và tất cả
+test đều pass:
 
 ```powershell
 cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements-dev.txt
+
+# Kiểm tra Python syntax
 python -m compileall app
+
+# Chạy toàn bộ 204 test
 python -m pytest
 ```
 
-Baseline đồ án đã xác minh có 204 backend test pass.
+Kết quả mong đợi: **204 test pass**, không có lỗi biên dịch.
 
-## Bước 2: Build cho Fargate
+## Bước 2 – Cấu hình .env local
 
-Dockerfile cài dependency Python đã pin version, copy application, expose port
-8000 và có container health check. Image được build theo kiến trúc runtime của
-ECS và smoke test `/api/health` trước khi publish.
+Copy file mẫu và chỉnh sửa cho môi trường của bạn:
 
 ```powershell
+Copy-Item .env.example .env
+```
+
+Các biến cần cập nhật:
+
+| Biến | Giá trị | Ghi chú |
+|---|---|---|
+| `AWS_REGION` | `ap-southeast-1` | Region cho tất cả AWS call |
+| `S3_BUCKET` | `livecap-transcripts-dev-720459752315` | Tên bucket transcript của bạn |
+| `ALLOWED_ORIGIN` | `http://localhost:5173` | URL frontend local |
+| `BILINGUAL_DUAL_STREAM` | `true` | Bật cả tiếng Việt và tiếng Anh |
+
+**Không bao giờ** đặt AWS access key vào file này. Backend dùng IAM profile
+được set trong môi trường của bạn.
+
+## Bước 3 – Xác minh backend chạy được ở local
+
+```powershell
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+Mở terminal khác:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/api/health
+```
+
+Kết quả mong đợi:
+
+```json
+{"status": "healthy", "version": "1.0.0"}
+```
+
+## Bước 4 – Build Docker image cho Fargate
+
+ECS Fargate chạy trên Linux `amd64`. Dùng Docker Buildx để build đúng platform
+bất kể máy của bạn dùng kiến trúc nào:
+
+```powershell
+# Tag image theo Git commit SHA hiện tại (immutable)
 $imageTag = "$(git rev-parse --short HEAD)-amd64"
+
 docker buildx build --platform linux/amd64 --provenance=false `
   -t "livecap-backend:$imageTag" --load .
+```
+
+Smoke-test image trên máy local trước khi push:
+
+```powershell
 docker run --rm -d --name livecap-smoke -p 8000:8000 `
   --env-file .env "livecap-backend:$imageTag"
+
+Start-Sleep 3
 Invoke-RestMethod http://127.0.0.1:8000/api/health
+
 docker stop livecap-smoke
 ```
 
-Không đưa `.env` hoặc AWS credential vào image. Local dùng AWS profile; ECS
-inject setting và dùng IAM role khi chạy.
+## Bước 5 – Xác thực Docker với ECR và Push
 
-## Bước 3: Push image immutable
-
-ECR lưu backend image. Deployment tag được tạo từ Git commit thay vì `latest`,
-nhờ đó task definition luôn trỏ đến artifact có thể truy vết. Demo công khai đã
-xác minh dùng tag `1ef4250-amd64`.
-
-```text
-source commit -> Docker image -> ECR tag immutable -> ECS task definition
-```
-
-Đăng nhập Docker vào ECR và push đúng immutable tag. Chỉ thay repository name
-khi môi trường target dùng ECR repository khác.
+ECR dùng token ngắn hạn để xác thực Docker. Lấy token mới và push image:
 
 ```powershell
-$region = "ap-southeast-1"
-$accountId = aws sts get-caller-identity --query Account --output text
-$registry = "$accountId.dkr.ecr.$region.amazonaws.com"
+$region    = "ap-southeast-1"
+$accountId = aws sts get-caller-identity --query Account --output text `
+               --profile livecap-camgiacntn
+$registry  = "$accountId.dkr.ecr.$region.amazonaws.com"
 $repository = "$registry/livecap-backend"
-aws ecr get-login-password --region $region |
+
+# Đăng nhập
+aws ecr get-login-password --region $region --profile livecap-camgiacntn |
   docker login --username AWS --password-stdin $registry
+
+# Tag và push
 docker tag "livecap-backend:$imageTag" "$repository:$imageTag"
 docker push "$repository:$imageTag"
 ```
 
-## Bước 4: Tạo task definition revision
+Sau khi push, image xuất hiện trong ECR với tag bất biến được tạo từ Git
+commit SHA:
 
-Cập nhật image URI thành SHA tag vừa push, giữ container port 8000, inject
-environment và gắn execution/task role. Đăng ký revision mới thay vì sửa artifact
-cũ. Sau khi review revision, cập nhật ECS service và chờ service stable.
+![Danh sách ECR repository – hiển thị repository livecap-backend](/images/5-Workshop/5.3-S3-vpc/ecr_repositories.png)
 
-```powershell
-aws ecs update-service --region ap-southeast-1 `
-  --cluster <cluster-name> --service <service-name> `
-  --task-definition <task-definition-family:revision>
-aws ecs wait services-stable --region ap-southeast-1 `
-  --cluster <cluster-name> --services <service-name>
-```
+![Danh sách image ECR – tag bất biến theo định dạng Git SHA](/images/5-Workshop/5.3-S3-vpc/ecr_images_list.png)
 
-Không chạy placeholder trực tiếp trên production. Phải xác nhận account,
-cluster, service, task-definition diff và rollback revision trước.
+## Bước 6 – Phân tách IAM Role
 
-## Tách IAM role
+LiveCap dùng hai IAM role riêng biệt cho ECS task:
 
-- **Task execution role:** pull image từ ECR và ghi container log.
-- **Task role:** gọi Transcribe, Translate, transcript S3, CloudWatch và action
-  ECS scale-down tối thiểu nếu bật.
-- **Wake Lambda role:** chỉ describe/update ECS service được chọn trong target.
+**Task Execution Role** (`livecap-execution-role`)
+- Pull image từ ECR
+- Ghi container log vào CloudWatch
 
-Cách tách này ngăn application kế thừa quyền deployment quá rộng.
+**Task Role** (`livecap-task-role`)
+- Gọi Amazon Transcribe Streaming
+- Gọi Amazon Translate
+- Ghi/đọc từ S3 bucket transcript private
+- Ghi metric vào CloudWatch
+- Tùy chọn: gọi `ecs:UpdateService` để idle scale-down
+
+Việc phân tách này đảm bảo ứng dụng đang chạy không bao giờ có quyền deploy
+mà nó không cần.
