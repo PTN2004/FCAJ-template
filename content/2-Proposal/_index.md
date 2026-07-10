@@ -69,18 +69,7 @@ Raw audio is not stored. Only finalized transcript text is eligible for export.
 
 ## 5. Solution Architecture
 
-{{< mermaid align="left" >}}
-flowchart LR
-  User["Browser"] -->|HTTPS/WSS| CF["Amazon CloudFront"]
-  CF -->|OAC| Frontend["Private S3 frontend"]
-  CF -->|/api/* and /ws/*| ALB["Application Load Balancer"]
-  ALB --> ECS["ECS Fargate - FastAPI"]
-  ECR["Amazon ECR"] -.-> ECS
-  ECS --> Transcribe["Amazon Transcribe Streaming"]
-  ECS --> Translate["Amazon Translate"]
-  ECS --> Transcript["Private S3 transcripts"]
-  ECS -.-> CW["Amazon CloudWatch"]
-{{< /mermaid >}}
+![alt](/images/workshop/target.png)
 
 The regional deployment uses `ap-southeast-1`. CloudFront is the global public
 entrypoint. The verified live environment uses one Fargate task behind a
