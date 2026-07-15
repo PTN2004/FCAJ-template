@@ -10,6 +10,7 @@ pre: " <b> 1.12. </b> "
 
 * Consolidate all AWS cloud journey service modules into a single 3-tier high-availability architecture.
 * Design, implement, and document the final web application infrastructure and submit the 12-week internship worklog.
+* Deploy LiveCap into production via CI/CD, conduct latency integration testing, perform operational cost breakdown analysis, and complete project submission.
 
 ### Tasks to be carried out this week:
 | Day | Task | Start Date | Completion Date | Reference Material |
@@ -19,6 +20,7 @@ pre: " <b> 1.12. </b> "
 | 4 | - **Practice:** Set up auto-scaling web application tier backed by custom IAM roles and ALB integrations | 07/08/2026 | 07/08/2026 | <https://cloudjourney.awsstudygroup.com/> |
 | 5 | - **Practice:** Set up Route53 DNS resolution mapping web traffic to the ALB, and configure CloudWatch metrics dashboards | 07/09/2026 | 07/09/2026 | <https://cloudjourney.awsstudygroup.com/> |
 | 6 | - Consolidate architecture documentation, complete system testing, and finalize the 12-week worklog report | 07/10/2026 | 07/10/2026 | <https://cloudjourney.awsstudygroup.com/> |
+| 6 | - **Capstone Project:** Deploy LiveCap live on AWS, execute automated integration tests under simulated conditions, analyze and summarize costs, and compile final submission | 07/10/2026 | 07/10/2026 | <https://cloudjourney.awsstudygroup.com/> |
 
 ### Week 12 Achievements:
 
@@ -26,3 +28,4 @@ pre: " <b> 1.12. </b> "
 * Configured automated failover capabilities across Availability Zones for the database tier using RDS Multi-AZ.
 * Successfully mapped custom DNS names via Route53, implementing load balancing and auto-scaling mechanisms.
 * Completed and compiled the final 12-week worklog documentation summarizing all accomplishments.
+* Deployed the LiveCap production application on AWS, verifying functionality and publishing the architecture/cost evaluation reports.

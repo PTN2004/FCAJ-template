@@ -11,6 +11,7 @@ pre: " <b> 1.9. </b> "
 * Understand cost-optimized rapid application prototyping using Amazon Lightsail.
 * Deploy pre-configured application blueprint stacks, configure static IPs, and manage networking.
 * Evaluate and implement migration pathways from Lightsail environments into Amazon EC2 instances.
+* Integrate Amazon Translate for bilingual LiveCap generation and implement file export logic to S3 via secure presigned URLs.
 
 ### Tasks to be carried out this week:
 | Day | Task | Start Date | Completion Date | Reference Material |
@@ -20,6 +21,7 @@ pre: " <b> 1.9. </b> "
 | 4 | - **Practice:** Assign static network addresses, set up access firewall rules (allowing ports 80, 443), and inspect DNS linkages | 06/17/2026 | 06/17/2026 | <https://000045.awsstudygroup.com/> |
 | 5 | - Learn scaling limits and methods to transition workloads from Lightsail to EC2 | 06/18/2026 | 06/18/2026 | <https://000045.awsstudygroup.com/> |
 | 6 | - **Practice:** Generate a backup snapshot of the Lightsail instance, export it to EC2, and configure an EC2 instance from it | 06/19/2026 | 06/19/2026 | <https://000045.awsstudygroup.com/> |
+| 6 | - **Capstone Project:** Integrate Amazon Translate in FastAPI and implement secure S3 transcript text file export with presigned URLs | 06/19/2026 | 06/19/2026 | <https://cloudjourney.awsstudygroup.com/> |
 
 ### Week 9 Achievements:
 
@@ -27,3 +29,4 @@ pre: " <b> 1.9. </b> "
 * Configured persistent network interfaces (Static IPs) and host firewall rules within the Lightsail container boundaries.
 * Successfully exported a backup snapshot from the Lightsail dashboard to EC2, creating a mirror target instance in EC2.
 * Documented cost-utility structures comparing Lightsail's bundled pricing with EC2's pay-as-you-go variables.
+* Implemented bilingual translation routing and automated secure text transcript file generation stored on S3.

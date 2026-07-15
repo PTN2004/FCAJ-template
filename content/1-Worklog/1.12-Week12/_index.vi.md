@@ -10,6 +10,7 @@ pre: " <b> 1.12 </b> "
 
 * Tổng hợp toàn bộ các phân hệ dịch vụ đã học trong chuỗi Explore AWS Services thành một dự án kiến trúc web 3 lớp có tính sẵn sàng cao (High Availability).
 * Thiết kế, triển khai thực tế, ghi nhận kết quả hoạt động của toàn bộ hạ tầng và hoàn tất báo cáo thực tập worklog 12 tuần.
+* Triển khai thực tế ứng dụng LiveCap qua CI/CD, thực hiện kiểm thử tích hợp (độ trễ), phân tích cấu trúc chi phí và nghiệm thu dự án.
 
 ### Các công việc cần triển khai trong tuần này:
 | Thứ | Công việc | Ngày bắt đầu | Ngày hoàn thành | Nguồn tài liệu |
@@ -19,6 +20,7 @@ pre: " <b> 1.12 </b> "
 | 4 | - **Thực hành:** Triển khai lớp ứng dụng web với Auto Scaling Group gán IAM Role bảo mật và đấu nối qua ALB | 07/08/2026 | 07/08/2026 | <https://cloudjourney.awsstudygroup.com/> |
 | 5 | - **Thực hành:** Cấu hình Route53 điều hướng tên miền về ALB và thiết lập hệ thống CloudWatch giám sát toàn bộ tài nguyên | 07/09/2026 | 07/09/2026 | <https://cloudjourney.awsstudygroup.com/> |
 | 6 | - Thực hiện kiểm thử tích hợp (Integration Test), viết báo cáo tổng kết thực tập và nghiệm thu worklog 12 tuần | 07/10/2026 | 07/10/2026 | <https://cloudjourney.awsstudygroup.com/> |
+| 6 | - **Dự án Capstone:** Triển khai LiveCap lên AWS, thực hiện tích hợp kiểm thử hệ thống, phân tích thống kê chi phí và tổng hợp hồ sơ nghiệm thu | 07/10/2026 | 07/10/2026 | <https://cloudjourney.awsstudygroup.com/> |
 
 ### Kết quả đạt được tuần 12:
 
@@ -26,3 +28,4 @@ pre: " <b> 1.12 </b> "
 * Cấu hình thành công tính năng Multi-AZ cho cơ sở dữ liệu RDS MySQL giúp hệ thống tự động failover sang zone dự phòng khi xảy ra sự cố.
 * Liên kết thành công tên miền DNS qua Route53 để phân phối tải qua ALB đến cụm máy chủ tự co giãn ASG.
 * Hoàn thiện và tổng hợp đầy đủ nội dung báo cáo thực tập worklog 12 tuần theo đúng lộ trình đã đề ra.
+* Đưa ứng dụng LiveCap vận hành thực tế trên AWS Cloud, vượt qua các bài kiểm thử chức năng và xuất bản báo cáo đánh giá hạ tầng kèm chi phí tối ưu.

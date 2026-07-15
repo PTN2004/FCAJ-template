@@ -11,6 +11,7 @@ pre: " <b> 1.11. </b> "
 * Master cloud resource observability, metrics dashboard setups, and centralized logging via Amazon CloudWatch.
 * Configure log shippers on servers to centralize application log outputs.
 * Build automated alert notification rules using CloudWatch Alarms and Amazon Simple Notification Service (SNS).
+* Declare the full LiveCap infrastructure-as-code configuration using Terraform, covering CloudFront, S3, ECS, and ALB.
 
 ### Tasks to be carried out this week:
 | Day | Task | Start Date | Completion Date | Reference Material |
@@ -20,6 +21,7 @@ pre: " <b> 1.11. </b> "
 | 4 | - **Practice:** Construct a custom CloudWatch Dashboard containing line and number widgets representing CPU, Memory, and Disk stats of your ASG instances | 07/01/2026 | 07/01/2026 | <https://000008.awsstudygroup.com/> |
 | 5 | - **Practice:** Set up an Amazon SNS Topic, subscribe developer email, create a CloudWatch Alarm triggered at 80% CPU usage, and bind it to the SNS topic | 07/02/2026 | 07/02/2026 | <https://000008.awsstudygroup.com/> |
 | 6 | - **Practice:** Configure CloudWatch Agent log rules to ship Apache access and system error logs to CloudWatch Log Groups, and write filter queries | 07/03/2026 | 07/03/2026 | <https://000008.awsstudygroup.com/> |
+| 6 | - **Capstone Project:** Write Terraform configurations for ALB, ECS Fargate, CloudFront OAC, S3 buckets, and IAM roles | 07/03/2026 | 07/03/2026 | <https://cloudjourney.awsstudygroup.com/> |
 
 ### Week 11 Achievements:
 
@@ -27,3 +29,4 @@ pre: " <b> 1.11. </b> "
 * Designed dynamic operational dashboards to visualize cross-infrastructure performance data under single views.
 * Implemented automatic alerts using CloudWatch Alarms linked with SNS, sending email alerts to administrator endpoints under high CPU stress conditions.
 * Centralized web application access/error logs inside CloudWatch Log Groups, enabling analysis using CloudWatch Logs Insights.
+* Fully automated the LiveCap deployment pipeline using Terraform, ensuring secure network isolation and IAM permissions.
