@@ -49,6 +49,6 @@ To apply this solution to a real-world project, the general process typically in
 * **Step 5 - Deploy to SageMaker:** Use the selected configuration to push the container to Amazon ECR and create a SageMaker Endpoint directly via BentoML's CLI commands, completing the process of taking the model to production.
 
 The following figure is an overview of the workflow conducted throughout the post.
-![The following figure is an overview of the workflow conducted throughout the post.](/images/blogpost/blog3_fg1.png)
+![The following figure is an overview of the workflow conducted throughout the post.](/images/3-BlogsPosted/blog3-1.png)
 
 AWS Study Group Post Link: [OPTIMIZING LLM INFERENCE PERFORMANCE AND COST ON AMAZON SAGEMAKER AI WITH BENTOML LLM OPTIMIZER](https://www.facebook.com/groups/awsstudygroupfcj/posts/2206721756759451/?notif_id=1783392652127913&notif_t=group_post_approved&ref=notif)

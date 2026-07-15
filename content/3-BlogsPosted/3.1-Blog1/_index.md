@@ -25,15 +25,15 @@ When embarking on personalization, organizations often encounter the following t
 This architecture clearly separates the data processing pipeline from the AI training pipeline, maximizing the use of fully-managed services:
 
 * **Automated data integration (AWS Glue):** Acts as a serverless ETL service. AWS Glue Crawlers automatically scan fragmented data sources to identify their schemas. Then, Glue ETL Jobs (running on Apache Spark) clean, normalize, and export the data to a CSV format stored centrally in Amazon S3.
-![alt text](/images/blogpost/blog1_fg2.png)
+![alt text](/images/3-BlogsPosted/blog1-2.png)
 *Using AWS Glue to export datasets from heterogeneous data sources to Amazon S3*
 
 * **Automated ML training (Amazon Personalize):** Once the data converges in S3, Personalize takes over the complex ML workload. It automatically selects the most suitable algorithm based on three core datasets: Interactions, Users, and Items.
-![alt text](/images/blogpost/blog1_fg1.png)
+![alt text](/images/3-BlogsPosted/blog1-1.png)
 *Amazon Personalize: from datasets to a recommendation API*
 
 * **End-to-End Serverless Architecture:** Both services automatically scale according to actual demand, completely eliminating the server management and provisioning burden for the engineering team.
-![alt text](/images/blogpost/blog1_fg3.png)
+![alt text](/images/3-BlogsPosted/blog1-3.png)
 *End-to-end architecture combining the data export with AWS Glue, the MLOps training workflow, and Amazon Personalize*
 
 ## 3. Key Takeaways

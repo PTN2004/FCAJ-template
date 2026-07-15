@@ -25,17 +25,17 @@ Khi bắt tay vào triển khai cá nhân hóa, các tổ chức thường gặp
 Kiến trúc này phân tách rõ ràng luồng xử lý dữ liệu và luồng huấn luyện AI, tận dụng tối đa các dịch vụ quản lý hoàn toàn (fully-managed):
 
 * **Tự động hóa tích hợp dữ liệu (AWS Glue):** Đóng vai trò là một dịch vụ ETL serverless. AWS Glue Crawlers tự động quét các nguồn dữ liệu đang phân mảnh để nhận diện cấu trúc (schema). Sau đó, các Glue ETL Jobs (chạy trên Apache Spark) sẽ làm sạch, chuẩn hóa và xuất dữ liệu ra định dạng CSV lưu trữ tại Amazon S3.
-![alt text](/images/blogpost/blog1_fg2.png)
+![alt text](/images/3-BlogsPosted/blog1-2.png)
 *Sử dụng AWS Glue để xuất các tập dữ liệu từ những nguồn dữ liệu không đồng nhất sang Amazon S3.*
 
 
 * **Huấn luyện ML tự động (Amazon Personalize):** Sau khi dữ liệu hội tụ về S3, Personalize tiếp quản toàn bộ phần việc phức tạp của Machine Learning. Nó tự động chọn thuật toán phù hợp nhất dựa trên ba tập dữ liệu: Tương tác (Interactions), Người dùng (Users), và Sản phẩm (Items).
-![alt text](/images/blogpost/blog1_fg1.png)
+![alt text](/images/3-BlogsPosted/blog1-1.png)
 *Amazon Personalize: từ các tập dữ liệu đến API gợi ý*
 
 
 * **Kiến trúc Serverless End-to-End:** Cả hai dịch vụ đều tự động mở rộng theo nhu cầu thực tế, loại bỏ hoàn toàn gánh nặng quản trị máy chủ cho đội ngũ kỹ thuật.
-![alt text](/images/blogpost/blog1_fg3.png)
+![alt text](/images/3-BlogsPosted/blog1-3.png)
 *Kiến trúc toàn diện kết hợp quy trình xuất dữ liệu sử dụng AWS Glue, quy trình huấn luyện MLOps và Amazon Personalize.*
 
 ## 3. Những điểm chính cần nắm
