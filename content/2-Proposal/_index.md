@@ -69,7 +69,7 @@ Raw audio is not stored. Only finalized transcript text is eligible for export.
 
 ## 5. Solution Architecture
 
-![alt](/images/workshop/target.png)
+![alt](/images/5-Workshop/livecap-target-architecture.png)
 
 The regional deployment uses `ap-southeast-1`. CloudFront is the global public
 entrypoint. The verified live environment uses one Fargate task behind a

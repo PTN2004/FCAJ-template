@@ -68,18 +68,7 @@ Hệ thống không lưu raw audio. Chỉ transcript text đã finalized mới �
 
 ## 5. Kiến trúc giải pháp
 
-{{< mermaid align="left" >}}
-flowchart LR
-  User["Trình duyệt"] -->|HTTPS/WSS| CF["Amazon CloudFront"]
-  CF -->|OAC| Frontend["S3 frontend private"]
-  CF -->|/api/* và /ws/*| ALB["Application Load Balancer"]
-  ALB --> ECS["ECS Fargate - FastAPI"]
-  ECR["Amazon ECR"] -.-> ECS
-  ECS --> Transcribe["Amazon Transcribe Streaming"]
-  ECS --> Translate["Amazon Translate"]
-  ECS --> Transcript["S3 transcript private"]
-  ECS -.-> CW["Amazon CloudWatch"]
-{{< /mermaid >}}
+![alt](/images/5-Workshop/livecap-target-architecture.png)
 
 Các tài nguyên regional chạy tại `ap-southeast-1`. CloudFront là public entry
 point global. Môi trường live đã xác minh dùng một Fargate task sau ALB multi-AZ;
